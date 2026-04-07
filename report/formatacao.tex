@@ -1,0 +1,73 @@
+% Common packages
+%\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{soul}
+\usepackage{xcolor}
+\usepackage{comment}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[printonlyused]{acronym} 
+\usepackage{tcolorbox}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{longtable} 
+\usepackage{ragged2e}
+\usepackage{verbatim}
+\usepackage{threeparttable}
+\usepackage{subfigure}
+
+% Page setup
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.0cm]{geometry}
+\raggedbottom % Não obriga as páginas pares e ímpares a terem a mesma altura de texto.
+
+% Font
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{sansmathfonts}
+\usepackage{helvet}
+
+% headers and footers
+\pagestyle{plain} % Header is clear and the footer contains only the page number
+
+% Paragraph formatting
+\setlength{\parindent}{25pt}
+\setlength{\parskip}{0pt}
+\linespread{1.3}
+
+% Path for figures
+\graphicspath{{.}{figuras/}}
+
+% Captions
+\usepackage[font=small,labelfont=bf,labelsep=quad,justification=justified,singlelinecheck=false]{caption}
+\setlength{\abovecaptionskip}{6pt}
+\setlength{\belowcaptionskip}{6pt}
+
+% Lists formatting
+\usepackage{enumitem} % For manipulating the whitespace between and within lists
+
+% Substituir Appendice por Anexo
+\AtBeginDocument{\renewcommand\appendixname{Appendix}}
+
+% Bibliography
+%\usepackage[authoryear]{natbib}
+\usepackage[numbers]{natbib}
+
+% Math
+\everymath{\displaystyle}
+
+% New commands
+\newcommand{\palavraschave}[1]{%
+	{\par\vspace{36pt}\noindent\Large\bfseries Palavras chave}\vspace{12pt}\par
+	\noindent #1
+    }
+
+\newcommand{\keywords}[1]{%
+	{\par\vspace{36pt}\noindent\Large\bfseries Keywords}\vspace{12pt}\par
+	\noindent #1
+    }

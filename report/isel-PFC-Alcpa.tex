@@ -1,0 +1,45 @@
+\documentclass[a4paper,11pt]{book}
+
+\input{formatacao}
+
+\begin{document}
+
+\include{./tex/1_rosto}
+
+\frontmatter % Inicialização da paginação (números romanos)
+\include{./tex/2_agradecimentos}
+\include{./tex/3_declaracao}
+\include{./tex/4_abstract}
+\include{./tex/5_resumo}
+
+\renewcommand{\contentsname}{Contents}
+\tableofcontents
+
+\renewcommand{\listfigurename}{List of Figures}
+\listoffigures
+
+\renewcommand{\listtablename}{List of Tables}
+\listoftables
+
+\include{./tex/6_simbologia}
+
+\mainmatter % Reinicialização da paginação (números árabes)
+\include{./tex/capitulo1}
+\include{./tex/capitulo2}
+\include{./tex/capitulo3}
+\include{./tex/capitulo4}
+\include{./tex/capitulo5}
+\include{./tex/capitulo6}
+\include{./tex/capitulo7}
+
+\backmatter
+\bibliographystyle{apalike}
+\bibliography{bibdatabase}
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\mainmatter
+% \appendix
+% \include{./tex/x_anexoA}
+
+\end{document}
+
