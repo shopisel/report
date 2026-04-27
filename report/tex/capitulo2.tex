@@ -1,9 +1,179 @@
-% !TeX spellcheck = pt_PT2
+% !TeX spellcheck = pt_PT
 
 \chapter{State-Of-The-Art}
 \label{chap:2}
- 
-This chapter explores the current state of technologies, methodologies and tools
-relevant to the development of ... ~\cite{zanevych-2024}
 
-Example of using an \ac{API}
+Este capítulo apresenta o estado da arte das tecnologias, metodologias e ferramentas
+mais relevantes para o desenvolvimento da plataforma ShopISEL. A análise é orientada
+pelas necessidades concretas do projeto: disponibilizar uma solução composta por
+aplicação web, aplicação móvel, serviços de backend, persistência relacional,
+autenticação centralizada, recolha automática de dados de produtos e mecanismos de
+entrega contínua.
+
+\section{Plataformas digitais para apoio a compras}
+\label{sec:2.1}
+
+As soluções digitais para apoio a compras evoluíram de listas simples, mantidas
+localmente pelo utilizador, para plataformas integradas capazes de combinar
+catálogos de produtos, preços, histórico de alterações, alertas e informação
+contextual. No domínio dos supermercados, esta evolução é particularmente relevante,
+uma vez que o preço de um mesmo produto pode variar consoante a loja, a campanha
+promocional, a disponibilidade e a localização geográfica.
+
+No contexto deste projeto, a plataforma não se limita a representar uma lista de
+compras. A solução pretende relacionar produtos, categorias, lojas, preços e
+utilizadores, permitindo que a lista seja um ponto de entrada para decisões de
+compra mais informadas. Esta abordagem aproxima a aplicação de sistemas de
+comparação e monitorização de preços, mas mantém o foco numa utilização prática e
+recorrente: preparar compras, consultar alternativas e acompanhar alterações
+relevantes ao longo do tempo.
+
+\section{Arquitetura orientada a serviços}
+\label{sec:2.2}
+
+Uma tendência consolidada no desenvolvimento de plataformas distribuídas é a
+separação do sistema em serviços especializados. Esta abordagem permite dividir
+responsabilidades por domínio funcional, reduzir o acoplamento entre componentes e
+facilitar a evolução independente de cada parte do sistema. No projeto ShopISEL, esta
+separação encontra-se refletida em serviços distintos para listas de compras,
+produtos, lojas e preços.
+
+A utilização de \ac{API}s \ac{REST} continua a ser uma escolha frequente em sistemas
+web e móveis, devido à sua simplicidade, interoperabilidade e boa integração com
+clientes baseados em \ac{HTTP}. Estudos recentes sobre frameworks para serviços web
+destacam que a escolha da tecnologia de backend deve considerar desempenho,
+escalabilidade, produtividade e maturidade do ecossistema~\cite{zanevych-2024}. No
+caso do ShopISEL, estes critérios justificam a adoção de serviços em ASP.NET Core,
+com endpoints organizados por domínio e contratos explícitos para a comunicação com
+as aplicações cliente.
+
+O projeto utiliza Minimal \ac{API}s em ASP.NET Core, uma abordagem recomendada para
+a criação de \ac{API}s \ac{HTTP} com menor quantidade de código estrutural e boa
+adequação a serviços pequenos ou focados num domínio específico~\cite{microsoft-minimal-apis}.
+Esta opção é coerente com a divisão do repositório, onde cada serviço encapsula o seu
+modelo de dados, endpoints, lógica de negócio e configuração de execução.
+
+\section{Persistência de dados e modelo relacional}
+\label{sec:2.3}
+
+A gestão de produtos, lojas, listas e preços exige consistência entre entidades
+relacionadas. Por esse motivo, as bases de dados relacionais continuam a ser uma
+solução adequada para sistemas onde existem relações fortes, restrições de integridade
+e necessidade de consultas estruturadas. PostgreSQL é uma das soluções relacionais
+mais utilizadas em aplicações modernas, sendo mantida com documentação oficial e
+suporte para versões atuais~\cite{postgresql-docs}.
+
+No ShopISEL, os serviços de backend recorrem a Entity Framework Core com o provider
+Npgsql para PostgreSQL. Esta combinação permite modelar entidades em C\#, aplicar
+migrações e interagir com a base de dados através de uma camada de acesso a dados
+integrada no ecossistema .NET~\cite{npgsql-efcore}. A utilização de migrações é
+particularmente importante porque o sistema evolui por serviços: cada domínio pode
+alterar o seu esquema de dados sem exigir uma reorganização global da aplicação.
+
+Esta opção também facilita o suporte a cenários relevantes para o projeto, como a
+associação de itens a listas de compras, a categorização de produtos, o registo de
+lojas e a manutenção de informação de preços recolhida de fontes externas. A
+persistência relacional oferece, assim, uma base estável para relacionar dados
+operacionais com funcionalidades de comparação e consulta.
+
+\section{Aplicações web modernas}
+\label{sec:2.4}
+
+As aplicações web modernas privilegiam interfaces reativas, comunicação assíncrona
+com \ac{API}s e componentes reutilizáveis. React consolidou-se como uma biblioteca
+amplamente adotada para construção de interfaces declarativas, tirando partido de
+componentes e hooks para gerir estado, efeitos e composição de comportamentos
+~\cite{react-hooks}. Vite, por sua vez, é frequentemente utilizado em projetos
+frontend por simplificar a configuração e acelerar o ciclo de desenvolvimento.
+
+No ShopISEL, a aplicação web é construída com React, TypeScript e Vite. Esta
+combinação permite desenvolver uma interface orientada a componentes para consultar
+produtos, gerir listas, visualizar alertas e interagir com os serviços de backend.
+O uso de TypeScript acrescenta verificação estática ao código cliente, reduzindo erros
+em estruturas de dados trocadas com as \ac{API}s. A presença de bibliotecas de
+componentes e utilitários de interface, como Material UI, Radix UI e Tailwind, permite
+acelerar a construção de ecrãs consistentes sem abandonar a personalização visual da
+plataforma.
+
+\section{Aplicações móveis multiplataforma}
+\label{sec:2.5}
+
+No contexto de compras presenciais, a aplicação móvel é essencial porque acompanha o
+utilizador no local onde a decisão de compra acontece. Funcionalidades como consulta
+rápida de listas, leitura de códigos de barras, comparação de preços e receção de
+alertas dependem de uma experiência adaptada ao dispositivo móvel.
+
+React Native permite desenvolver aplicações móveis com uma base tecnológica próxima
+do ecossistema React, enquanto Expo fornece ferramentas, módulos nativos e serviços
+que simplificam a criação de aplicações para Android, iOS e web a partir de um
+projeto JavaScript/TypeScript~\cite{expo-introduction}. No repositório do ShopISEL,
+a aplicação móvel usa Expo, Expo Router, React Native, NativeWind e módulos como
+Expo Camera e Expo Secure Store. Esta escolha é adequada ao projeto porque permite
+integrar navegação por separadores, autenticação, armazenamento seguro e leitura por
+câmara, mantendo uma base de desenvolvimento coerente com a aplicação web.
+
+\section{Autenticação e autorização}
+\label{sec:2.6}
+
+Sistemas que manipulam listas pessoais e preferências de utilizador necessitam de
+autenticação fiável e de uma separação clara entre identidade e lógica aplicacional.
+Keycloak é uma solução de gestão de identidade e acesso que suporta protocolos como
+OpenID Connect e OAuth 2.0, permitindo proteger aplicações e serviços através de
+tokens e endpoints padronizados~\cite{keycloak-oidc}.
+
+No ShopISEL, Keycloak é utilizado como componente central de autenticação. O serviço
+de listas valida tokens \ac{JWT} emitidos por Keycloak, verificando emissor, validade
+e partes autorizadas antes de permitir o acesso a recursos protegidos. Esta abordagem
+evita que cada serviço implemente autenticação própria e permite que web, mobile e
+backend partilhem um modelo comum de identidade.
+
+\section{Recolha automática de dados}
+\label{sec:2.7}
+
+Uma plataforma de comparação de preços depende da qualidade e atualização dos dados.
+Quando não existe uma \ac{API} pública uniforme para todas as lojas, a recolha
+automática por scraping torna-se uma alternativa prática, embora exija cuidados com
+estrutura das páginas, normalização de dados e robustez perante alterações externas.
+
+O projeto inclui scrapers específicos para Continente e Pingo Doce. Estes componentes
+recolhem produtos por categoria, extraem informação como nome, preço, promoção,
+imagem e disponibilidade, e podem sincronizar os resultados com PostgreSQL através da
+variável de ambiente \texttt{PRODUCTS\_DB\_CONNECTION}. No caso do Pingo Doce, a
+utilização de Playwright é adequada a páginas dinâmicas, uma vez que esta ferramenta
+permite automatizar browsers e interagir com conteúdo renderizado no cliente. A
+existência de ficheiros \ac{JSON} de saída também facilita a validação dos dados
+extraídos e a análise posterior por categoria.
+
+\section{Containerização, CI/CD e deployment}
+\label{sec:2.8}
+
+A entrega de aplicações compostas por vários serviços exige mecanismos que garantam
+reprodutibilidade e automatização. Docker permite empacotar aplicações e dependências
+em containers, tornando mais previsível a execução em ambientes distintos
+~\cite{docker-overview}. Esta característica é especialmente relevante no ShopISEL,
+onde coexistem serviços .NET, frontend web, gateway Nginx e componentes de suporte.
+
+O repositório inclui Dockerfiles e workflows de GitHub Actions para automatizar
+validação, construção e publicação de imagens. GitHub Actions suporta a automatização
+de workflows diretamente no repositório, incluindo tarefas de integração e entrega
+contínua~\cite{github-actions}. A configuração de deployment usa Render, com serviços
+baseados em imagens e um Nginx configurado como ponto de entrada para encaminhar
+pedidos para frontend, listas, produtos, lojas e preços. A documentação do Render
+suporta este modelo de deployment com imagens Docker pré-construídas ou Dockerfiles
+do repositório~\cite{render-docker}.
+
+\section{Síntese}
+\label{sec:2.9}
+
+O estado da arte analisado mostra que a arquitetura escolhida para o ShopISEL está
+alinhada com práticas atuais de desenvolvimento de aplicações distribuídas. A
+separação em serviços facilita a evolução por domínio, PostgreSQL e Entity Framework
+Core oferecem uma base consistente para persistência, React e Expo permitem cobrir web
+e mobile com tecnologias próximas, Keycloak centraliza autenticação e Docker com
+GitHub Actions apoia a entrega contínua.
+
+Estas escolhas tecnológicas respondem diretamente aos objetivos do projeto:
+centralizar informação de produtos e preços, suportar listas de compras inteligentes,
+permitir comparação entre lojas e preparar a plataforma para evolução futura com
+novas fontes de dados, novas funcionalidades de alerta e melhorias na experiência do
+utilizador.
