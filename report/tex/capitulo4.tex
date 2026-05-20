@@ -1,7 +1,394 @@
-% !TeX spellcheck = pt_PT2
+% !TeX spellcheck = pt_PT
 
-\chapter{Developed Work}
+\chapter{Trabalho Desenvolvido}
 \label{chap:4}
 
-This chapter presents the architecture, technology stack, and implementation of
-the ...
+Este capítulo apresenta em detalhe a arquitetura, as tecnologias e a implementação dos componentes que constituem o sistema ShopISEL. A solução é composta por múltiplos serviços de backend, duas aplicações cliente (web e móvel), um conjunto de scrapers de dados, um worker de notificações e a infraestrutura de suporte à autenticação, persistência e deployment.
+
+\section{Visão Geral da Arquitetura}
+\label{sec:4.1}
+
+O ShopISEL segue uma arquitetura orientada a serviços, em que cada domínio funcional é tratado por um serviço autónomo com a sua própria base de dados, lógica de negócio e ciclo de deployment. Esta separação permite que cada serviço evolua de forma independente, reduz o acoplamento entre componentes e facilita a escalabilidade horizontal de cada parte do sistema.
+
+A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sistema.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.6cm,
+    service/.style={rectangle, draw=black, rounded corners=4pt, fill=white,
+                    minimum width=2.6cm, minimum height=0.85cm, font=\small, align=center},
+    client/.style={rectangle, draw=black!70, rounded corners=4pt, fill=blue!12,
+                   minimum width=2.6cm, minimum height=0.85cm, font=\small, align=center},
+    db/.style={cylinder, draw=black!70, fill=gray!15, shape border rotate=90,
+               minimum width=2cm, minimum height=0.7cm, font=\scriptsize, align=center},
+    ext/.style={rectangle, draw=black!70, rounded corners=4pt, fill=orange!15,
+                minimum width=2.6cm, minimum height=0.85cm, font=\small, align=center},
+    gw/.style={rectangle, draw=black, rounded corners=4pt, fill=yellow!20,
+               minimum width=3cm, minimum height=0.85cm, font=\small\bfseries, align=center},
+    arr/.style={-{Stealth[length=5pt]}, thick},
+    darr/.style={<->, thick, dashed}
+]
+
+%--- Clientes ---
+\node[client] (web) {Web App\\(React + Vite)};
+\node[client, right=2.2cm of web] (mobile) {Mobile App\\(React Native)};
+
+%--- Gateway ---
+\node[gw, below=1.0cm of web, xshift=1.4cm] (nginx) {Nginx Gateway};
+
+%--- Serviços ---
+\node[service, below left=1.4cm and 2.0cm of nginx] (list)    {List\\Service};
+\node[service, left=0.5cm of list]                  (account) {Account\\Service};
+\node[service, right=0.5cm of list]                 (products){Products\\Service};
+\node[service, right=0.5cm of products]             (prices)  {Prices\\Service};
+\node[service, right=0.5cm of prices]               (stores)  {Stores\\Service};
+
+%--- Bases de dados ---
+\node[db, below=0.7cm of account]  (db-acc)  {PostgreSQL};
+\node[db, below=0.7cm of list]     (db-list) {PostgreSQL};
+\node[db, below=0.7cm of products] (db-prod) {PostgreSQL};
+\node[db, below=0.7cm of prices]   (db-pr)   {PostgreSQL};
+\node[db, below=0.7cm of stores]   (db-st)   {PostgreSQL};
+
+%--- Serviços externos ---
+\node[ext, right=2.8cm of nginx]  (keycloak) {Keycloak\\(Auth)};
+\node[ext, below=0.5cm of keycloak] (fcm)    {Firebase\\FCM};
+
+%--- MatchQueue ---
+\node[service, below=2.8cm of prices] (mq) {MatchQueue\\Service};
+\node[db, left=0.6cm of mq]  (mongo)   {MongoDB};
+\node[db, right=0.6cm of mq] (db-mq)   {PostgreSQL};
+
+%--- Scrapers ---
+\node[service, below=1.3cm of mq, xshift=-2cm] (sc-cont) {Scraper\\Continente};
+\node[service, right=0.8cm of sc-cont]          (sc-pd)   {Scraper\\Pingo Doce};
+
+%--- FCM Worker ---
+\node[service, below=1.3cm of db-mq] (fcmw) {FCM\\Worker};
+
+%--- Ligações cliente → gateway ---
+\draw[arr] (web.south) -- (nginx.north west);
+\draw[arr] (mobile.south) -- (nginx.north east);
+
+%--- Gateway → serviços ---
+\draw[arr] (nginx.south) -- (list.north);
+\draw[arr] (nginx.south) -- (products.north);
+\draw[arr] (nginx.south) -- (prices.north);
+\draw[arr] (nginx.south) -- (stores.north);
+\draw[arr] (nginx.south) -- (account.north);
+
+%--- Serviços → DBs ---
+\draw[arr] (account.south)  -- (db-acc.north);
+\draw[arr] (list.south)     -- (db-list.north);
+\draw[arr] (products.south) -- (db-prod.north);
+\draw[arr] (prices.south)   -- (db-pr.north);
+\draw[arr] (stores.south)   -- (db-st.north);
+
+%--- Auth ---
+\draw[darr] (nginx.east)    -- (keycloak.west);
+\draw[darr] (list.east)     -| (keycloak.south);
+
+%--- Scrapers → Mongo ---
+\draw[arr] (sc-cont.north) -- (mongo.south);
+\draw[arr] (sc-pd.north)   -- (mongo.south);
+
+%--- MatchQueue ---
+\draw[arr] (mongo.east)  -- (mq.west);
+\draw[arr] (mq.east)     -- (db-mq.west);
+
+%--- FCM Worker ---
+\draw[arr] (db-mq.south) -- (fcmw.north);
+\draw[arr] (fcmw.east)   -| (fcm.south);
+
+\end{tikzpicture}
+\caption{Visão geral da arquitetura do sistema ShopISEL}
+\label{fig:arquitetura}
+\end{figure}
+
+Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend comunicam com as suas respetivas bases de dados PostgreSQL e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
+
+A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue Service processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging.
+
+\section{Serviços de Backend}
+\label{sec:4.2}
+
+Todos os serviços de backend são desenvolvidos em ASP.NET Core com Minimal \ac{API}s, tirando partido da sua leveza, desempenho e boa integração com o ecossistema .NET. Cada serviço dispõe do seu próprio Dockerfile e pipeline de \ac{CI/CD}, sendo publicado como uma imagem Docker no GitHub Container Registry.
+
+\subsection{List Service}
+\label{sec:4.2.1}
+
+O List Service é o serviço central do ShopISEL no que diz respeito à interação do utilizador. Gere a criação, consulta, atualização e eliminação de listas de compras, bem como os itens que as compõem.
+
+O modelo de dados do List Service é composto por duas entidades principais:
+
+\begin{itemize}
+    \item \textbf{ShoppingListEntity}: representa uma lista de compras, com um identificador único, o identificador do proprietário (\texttt{OwnerId}, derivado do claim \texttt{sub} do token \ac{JWT}), o nome da lista e a data de criação.
+    \item \textbf{ShoppingListItemEntity}: representa um item da lista, com referência ao identificador do produto (\texttt{ProductId}), ao identificador da loja (\texttt{StoreId}), à quantidade desejada e ao estado de marcação (\texttt{Checked}).
+\end{itemize}
+
+Toda a persistência é assegurada pelo Entity Framework Core com o provider Npgsql para PostgreSQL, com migrações aplicadas automaticamente no arranque do serviço.
+
+A autenticação é obrigatória em todos os endpoints do List Service. O serviço valida tokens \ac{JWT} emitidos pelo Keycloak, verificando o emissor, a validade temporal e o claim \texttt{azp} (authorized party), que deve corresponder a um dos clientes registados (aplicação web ou móvel). Desta forma, cada lista de compras é sempre associada ao utilizador autenticado, e as operações de leitura e escrita são automaticamente filtradas por \texttt{OwnerId}, garantindo isolamento entre utilizadores.
+
+Os endpoints expostos são:
+
+\begin{itemize}
+    \item \texttt{GET /lists} — devolve todas as listas do utilizador autenticado;
+    \item \texttt{POST /lists} — cria uma nova lista com os itens fornecidos;
+    \item \texttt{GET /lists/\{listId\}} — devolve uma lista específica (apenas se pertencer ao utilizador autenticado);
+    \item \texttt{PUT /lists/\{listId\}} — atualiza o nome e os itens de uma lista;
+    \item \texttt{DELETE /lists/\{listId\}} — elimina uma lista.
+\end{itemize}
+
+O serviço inclui também um endpoint de saúde em \texttt{GET /health}, utilizado pelos mecanismos de monitorização da plataforma de deploy.
+
+\subsection{Products Service}
+\label{sec:4.2.2}
+
+O Products Service gere o catálogo de produtos e categorias da plataforma. Não requer autenticação, sendo acessível tanto pelas aplicações cliente como pelos serviços internos.
+
+O modelo de dados contempla duas entidades:
+
+\begin{itemize}
+    \item \textbf{ProductEntity}: representa um produto com identificador, nome, código de barras (\texttt{Barcode}), URL de imagem e referência à categoria.
+    \item \textbf{CategoryEntity}: representa uma categoria hierárquica, com suporte a subcategorias através de uma relação auto-referencial (\texttt{ParentCategoryId}).
+\end{itemize}
+
+A hierarquia de categorias permite organizar os produtos de forma estruturada (e.g., Alimentação → Lacticínios → Leite), facilitando a navegação e filtragem na interface do utilizador.
+
+Os endpoints de produto suportam filtragem por identificadores, por categoria e por nome, bem como uma pesquisa de produtos relacionados com base em favoritos do utilizador, com parâmetros de limite e distância máxima:
+
+\begin{itemize}
+    \item \texttt{GET /products?ids=...} — pesquisa por identificadores;
+    \item \texttt{GET /products?categoryId=...} — filtragem por categoria;
+    \item \texttt{GET /products?name=...} — pesquisa por nome;
+    \item \texttt{GET /products/related?favoriteIds=...} — produtos relacionados com os favoritos.
+\end{itemize}
+
+\subsection{Prices Service}
+\label{sec:4.2.3}
+
+O Prices Service mantém um registo dos preços de produtos por loja, incluindo suporte a preços de promoção. A entidade \textbf{PriceEntity} contém o identificador do produto, o identificador da loja, o preço atual, um preço de promoção opcional (\texttt{Sale}) e a data da promoção (\texttt{SaleDate}), bem como a data de última atualização.
+
+Este modelo permite ao sistema apresentar ao utilizador não só o preço atual, mas também o histórico de promoções e a variação de preços ao longo do tempo, suportando a funcionalidade de alertas de descida de preço.
+
+\subsection{Stores Service}
+\label{sec:4.2.4}
+
+O Stores Service gere informação sobre lojas físicas, sendo fundamental para a funcionalidade de georreferenciação. A entidade \textbf{StoreEntity} inclui o nome e marca da loja, morada, cidade e coordenadas geográficas (\texttt{Latitude}, \texttt{Longitude}).
+
+A presença de coordenadas geográficas permite ao sistema calcular a distância entre o utilizador e cada loja, apresentando os preços mais vantajosos em função da proximidade geográfica — um dos elementos diferenciadores do ShopISEL.
+
+\subsection{Account Service}
+\label{sec:4.2.5}
+
+O Account Service gere o perfil do utilizador autenticado, sincronizando dados provenientes do token \ac{JWT} emitido pelo Keycloak (nome, email) e permitindo a atualização de preferências do perfil.
+
+O serviço expõe dois endpoints protegidos:
+\begin{itemize}
+    \item \texttt{GET /accounts/me} — devolve o perfil do utilizador autenticado;
+    \item \texttt{PUT /accounts/me} — atualiza as preferências do perfil.
+\end{itemize}
+
+Este serviço é implantado no Fly.io, enquanto os restantes serviços são implantados no Render.com, demonstrando a flexibilidade da arquitetura em termos de plataformas de hosting.
+
+\subsection{MatchQueue Service}
+\label{sec:4.2.6}
+
+O MatchQueue Service é um componente híbrido que funciona em dois modos de execução: modo API (expõe um endpoint \texttt{POST /matchqueue/trigger} que pode ser invocado pelos scrapers após a recolha de dados) e modo worker (processa os dados de staging do MongoDB, normaliza-os e integra-os na base de dados relacional).
+
+Este serviço é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
+
+\begin{itemize}
+    \item \textbf{FavoriteProductEntity}: regista os produtos favoritos de cada utilizador, utilizados para determinar quais as notificações de descida de preço a enviar;
+    \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
+\end{itemize}
+
+O modo worker é ativado através do argumento \texttt{--mode worker} na linha de comandos, sendo orquestrado por um GitHub Actions workflow que o dispara após a conclusão dos scrapers.
+
+\section{Pipeline de Recolha de Dados}
+\label{sec:4.3}
+
+A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. A Figura~\ref{fig:pipeline} ilustra o fluxo de dados desde os scrapers até às notificações.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=0.9cm and 1.8cm,
+    box/.style={rectangle, draw, rounded corners=3pt, fill=white, minimum width=2.8cm,
+                minimum height=0.8cm, font=\small, align=center},
+    db/.style={cylinder, draw, fill=gray!15, shape border rotate=90,
+               minimum width=2.0cm, minimum height=0.6cm, font=\scriptsize, align=center},
+    arr/.style={-{Stealth[length=5pt]}, thick},
+    lbl/.style={font=\scriptsize, midway, above}
+]
+
+\node[box] (c)   {Scraper\\Continente};
+\node[box, right=1.5cm of c] (pd)  {Scraper\\Pingo Doce};
+\node[box, right=1.5cm of pd] (orch) {Orchestrator\\(GitHub Actions)};
+
+\node[db, below=0.9cm of pd] (mongo) {MongoDB\\(staging)};
+
+\node[box, below=0.9cm of mongo] (mq) {MatchQueue\\Service};
+
+\node[db, below=0.9cm of mq] (pg) {PostgreSQL\\(normalizado)};
+
+\node[box, below=0.9cm of pg] (fcmw) {FCM\\Worker};
+
+\node[box, right=1.8cm of fcmw] (fcm) {Firebase\\FCM};
+
+\node[box, right=1.8cm of fcm] (device) {Dispositivo\\do utilizador};
+
+\draw[arr] (c.south)    -- node[lbl]{JSON} (mongo.north west);
+\draw[arr] (pd.south)   -- node[lbl]{JSON} (mongo.north);
+\draw[arr] (orch.south) -- (mq.north east);
+\draw[arr] (mongo.south) -- node[lbl]{dados brutos} (mq.north);
+\draw[arr] (mq.south)   -- node[lbl]{normalização} (pg.north);
+\draw[arr] (pg.south)   -- node[lbl]{pendentes} (fcmw.north);
+\draw[arr] (fcmw.east)  -- (fcm.west);
+\draw[arr] (fcm.east)   -- (device.west);
+
+\end{tikzpicture}
+\caption{Pipeline de recolha de dados e entrega de notificações}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Scraper Continente}
+\label{sec:4.3.1}
+
+O Scraper Continente é uma aplicação .NET que utiliza o Playwright para navegar automaticamente no website do Continente e extrair informação de produtos por categoria. O Playwright permite controlar um browser real, sendo adequado para páginas com conteúdo renderizado dinamicamente no cliente, como é o caso do website do Continente~\cite{playwright-docs}.
+
+O scraper percorre as categorias configuradas, efetua scroll para carregar mais produtos (mecanismo de lazy loading), e extrai para cada produto o nome, preço atual, preço anterior, preço por unidade, disponibilidade, \ac{URL} da página e \ac{URL} da imagem. O resultado é exportado para um ficheiro JSON (\texttt{continente\_products.json}).
+
+A estrutura do scraper divide as responsabilidades em módulos distintos:
+\begin{itemize}
+    \item \texttt{Scrapers/}: contém a lógica de navegação e extração por categoria;
+    \item \texttt{Parsing/}: realiza o parsing do HTML e a normalização de texto (preços, unidades);
+    \item \texttt{Models/}: define as estruturas de dados para fontes de categoria e produtos extraídos.
+\end{itemize}
+
+\subsection{Scraper Pingo Doce}
+\label{sec:4.3.2}
+
+O Scraper Pingo Doce segue a mesma abordagem baseada em Playwright, adaptada à estrutura do website do Pingo Doce. Adicionalmente, suporta dois modos de execução:
+
+\begin{itemize}
+    \item \textbf{Modo normal}: efetua o scraping ao vivo e persiste os resultados em MongoDB;
+    \item \textbf{Modo \texttt{--from-json}}: processa um ficheiro JSON previamente gerado, evitando pedidos desnecessários ao website.
+\end{itemize}
+
+Os dados são persistidos em MongoDB~\cite{mongodb-docs} em duas coleções:
+\begin{itemize}
+    \item \texttt{scrape\_runs}: um documento por execução, identificado por um \texttt{run\_id} único;
+    \item \texttt{scrape\_products}: um documento por produto por execução, com um identificador estável baseado no URL externo ou numa combinação de categoria e nome.
+\end{itemize}
+
+Esta estratégia de identificação estável permite ao MatchQueue Service detetar alterações de preço entre execuções consecutivas, comparando os valores pelo mesmo identificador de produto.
+
+Após a conclusão da sincronização com o MongoDB, o scraper pode opcionalmente disparar o processamento no MatchQueue Service através de um pedido \texttt{POST /matchqueue/trigger}, configurado por variável de ambiente.
+
+O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (cron), lendo as credenciais de acesso ao MongoDB a partir de segredos do repositório.
+
+\subsection{Scraper Orchestrator}
+\label{sec:4.3.3}
+
+O Scraper Orchestrator é um repositório de workflows de GitHub Actions responsável por coordenar a execução dos scrapers de múltiplas insígnias. Cada scraper expõe um workflow reutilizável (\textit{reusable workflow}), que pode ser invocado pelo orchestrator através do mecanismo \texttt{workflow\_call}.
+
+Esta abordagem permite executar os scrapers em paralelo, aguardar a conclusão de todos eles e, de seguida, desencadear o processamento do MatchQueue Service. A adição de um novo scraper para uma insígnia adicional requer apenas a referência ao seu workflow reutilizável no orchestrator, sem necessidade de alterar os scrapers existentes.
+
+\section{FCM Notification Worker}
+\label{sec:4.4}
+
+O FCM Notification Worker é uma aplicação .NET de execução pontual (run-to-completion), concebida para ser invocada periodicamente pelo orchestrator de GitHub Actions. O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
+
+\begin{enumerate}
+    \item Inicializa o cliente Firebase com as credenciais codificadas em Base64 (provenientes de variável de ambiente);
+    \item Estabelece ligação à base de dados PostgreSQL do MatchQueue Service;
+    \item Consulta a tabela \texttt{notification\_enque} para obter notificações pendentes não processadas (\texttt{checked = false}), cruzando com a tabela \texttt{account\_push\_tokens} para obter os tokens FCM ativos dos utilizadores;
+    \item Constrói e envia as mensagens push em lotes de 500 (limite imposto pelo Firebase);
+    \item Marca as notificações processadas como \texttt{checked = true}.
+\end{enumerate}
+
+As notificações enviadas informam o utilizador de que o preço de um produto favorito desceu, incluindo nos dados da mensagem o identificador do produto e da notificação, permitindo à aplicação móvel navegar diretamente para o produto relevante.
+
+\section{Aplicação Web}
+\label{sec:4.5}
+
+A aplicação web do ShopISEL é desenvolvida em React com TypeScript e Vite, proporcionando uma interface moderna e responsiva para preparação e análise de compras num ambiente de desktop.
+
+A estrutura da aplicação segue uma organização por responsabilidade:
+\begin{itemize}
+    \item \texttt{src/api/}: camada de comunicação com os serviços de backend, abstraindo os detalhes de cada pedido HTTP;
+    \item \texttt{src/auth/}: integração com o Keycloak para autenticação, gestão do ciclo de vida do token e redirecionamentos;
+    \item \texttt{src/app/}: componentes de página e lógica de navegação;
+    \item \texttt{src/styles/}: estilos globais e configuração de temas.
+\end{itemize}
+
+A interface recorre a bibliotecas de componentes como Material UI, Radix UI e Tailwind CSS, que permitem construir ecrãs consistentes e acessíveis com menor esforço de implementação. O TypeScript garante a verificação estática dos tipos trocados com as APIs, reduzindo erros em tempo de execução.
+
+A aplicação web é servida em produção através de um servidor Nginx, sendo a imagem Docker publicada automaticamente pelo pipeline de \ac{CI/CD}.
+
+\section{Aplicação Móvel}
+\label{sec:4.6}
+
+A aplicação móvel é desenvolvida em React Native com o framework Expo, permitindo o desenvolvimento de uma única base de código para Android e iOS. O Expo Router é utilizado para a navegação declarativa entre ecrãs, seguindo uma estrutura baseada em ficheiros análoga ao Next.js.
+
+A estrutura de navegação principal assenta em separadores (\textit{tabs}):
+\begin{itemize}
+    \item \textbf{Lists} (\texttt{(tabs)/}): ecrã principal de gestão de listas de compras;
+    \item \textbf{Alerts} (\texttt{alerts.tsx}): visualização dos alertas de preço recebidos;
+    \item \textbf{Auth} (\texttt{auth.tsx}): fluxo de autenticação com Keycloak;
+    \item \textbf{Onboarding} (\texttt{onboarding.tsx}): ecrã de boas-vindas e configuração inicial.
+\end{itemize}
+
+A organização do código fonte por domínio funcional facilita a manutenção e a extensão da aplicação:
+\begin{itemize}
+    \item \texttt{src/api/}: chamadas aos serviços de backend;
+    \item \texttt{src/auth/}: gestão do token de autenticação com Expo Secure Store;
+    \item \texttt{src/push/}: integração com Firebase Cloud Messaging para receção de notificações;
+    \item \texttt{src/location/}: serviços de georreferenciação para apresentação de lojas próximas;
+    \item \texttt{src/favorites/}: gestão dos produtos favoritos do utilizador;
+    \item \texttt{src/i18n/}: suporte a múltiplos idiomas (internacionalização);
+    \item \texttt{src/theme/}: sistema de temas e estilos globais.
+\end{itemize}
+
+A leitura de códigos de barras é realizada com o módulo Expo Camera, permitindo ao utilizador identificar rapidamente um produto durante a compra. O armazenamento seguro dos tokens de autenticação utiliza o Expo Secure Store, que persiste dados de forma cifrada no dispositivo.
+
+O NativeWind é utilizado para estilização, aplicando as utilidades do Tailwind CSS ao contexto React Native~\cite{nativewind-docs}, garantindo consistência visual com a aplicação web.
+
+\section{Autenticação e Autorização}
+\label{sec:4.7}
+
+A autenticação e autorização no ShopISEL é centralizada no Keycloak, uma plataforma de gestão de identidade e acesso que implementa os protocolos \ac{OIDC} e OAuth 2.0.
+
+O fluxo de autenticação segue o padrão Authorization Code Flow com PKCE (Proof Key for Code Exchange), adequado tanto para aplicações web como para aplicações móveis. O utilizador é redirecionado para o servidor Keycloak para introduzir as suas credenciais; após autenticação bem-sucedida, é emitido um token de acesso \ac{JWT} que é enviado em cada pedido aos serviços protegidos.
+
+Os serviços que requerem autenticação (List Service e Account Service) validam o token da seguinte forma:
+\begin{enumerate}
+    \item Verificam que o emissor (\texttt{iss}) corresponde ao realm Keycloak configurado;
+    \item Verificam que o token não expirou (\texttt{exp});
+    \item Verificam que a chave de assinatura corresponde à chave pública do Keycloak (obtida via OIDC Discovery);
+    \item Verificam que o claim \texttt{azp} (authorized party) corresponde a um dos clientes autorizados (web, mobile).
+\end{enumerate}
+
+Esta abordagem evita que cada serviço implemente autenticação própria, centraliza a gestão de utilizadores no Keycloak e permite que novos serviços se integrem facilmente no ecossistema de autenticação existente.
+
+\section{Gateway e Infraestrutura de Deployment}
+\label{sec:4.8}
+
+O acesso às APIs dos serviços de backend é feito através de um gateway Nginx, que atua como ponto de entrada único para as aplicações cliente. O Nginx encaminha os pedidos para o serviço correto com base no caminho do URL:
+
+\begin{itemize}
+    \item \texttt{/lists/...} → List Service;
+    \item \texttt{/products/...} → Products Service;
+    \item \texttt{/prices/...} → Prices Service;
+    \item \texttt{/stores/...} → Stores Service;
+    \item \texttt{/} → Aplicação Web (frontend).
+\end{itemize}
+
+Esta arquitetura de gateway simplifica a configuração das aplicações cliente, que comunicam com um único endpoint base, e permite adicionar funcionalidades transversais como rate limiting, logging centralizado ou cache HTTP sem modificar os serviços individuais.
+
+Todo o sistema é containerizado com Docker. Cada serviço dispõe de um Dockerfile que produz uma imagem mínima e otimizada para produção. Os serviços são implantados no Render.com, com o Account Service a ser implantado no Fly.io, tirando partido das garantias de disponibilidade e escalabilidade destas plataformas.
+
+A configuração de deployment está declarada no ficheiro \texttt{render.yaml}, que especifica os serviços, as imagens Docker correspondentes e as variáveis de ambiente necessárias. As imagens são publicadas automaticamente no GitHub Container Registry pelos pipelines de \ac{CI/CD}, e o Render.com deteta novas versões e realiza o deploy de forma automática.

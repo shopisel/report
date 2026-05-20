@@ -5,15 +5,18 @@
   "latex-workshop.latex.outDir": "%DIR%",
   "latex-workshop.latex.recipes": [
     {
-      "name": "pdflatex",
+      "name": "pdflatex -> bibtex -> pdflatex*2",
       "tools": [
+        "pdflatex",
+        "bibtex",
+        "pdflatex",
         "pdflatex"
       ]
     },
     {
-      "name": "latexmk (pdf)",
+      "name": "pdflatex",
       "tools": [
-        "latexmk"
+        "pdflatex"
       ]
     }
   ],
@@ -29,19 +32,15 @@
       ]
     },
     {
-      "name": "latexmk",
-      "command": "latexmk",
+      "name": "bibtex",
+      "command": "bibtex",
       "args": [
-        "-pdf",
-        "-interaction=nonstopmode",
-        "-synctex=1",
-        "-file-line-error",
-        "%DOC%"
+        "%DOCFILE%"
       ]
     }
   ],
   "latex-workshop.latex.search.rootFiles.include": [
     "isel-PFC-Alcpa.tex"
   ],
-  "latex-workshop.latex.recipe.default": "pdflatex"
+  "latex-workshop.latex.recipe.default": "first"
 }

@@ -1,6 +1,88 @@
-% !TeX spellcheck = pt_PT2
+% !TeX spellcheck = pt_PT
 
-\chapter{Related Work}
+\chapter{Trabalho Relacionado}
 \label{chap:3}
 
-This chapter will explore two primary approaches to ...
+Este capítulo analisa soluções existentes no domínio das aplicações de listas de compras e comparação de preços, com o objetivo de identificar as limitações das abordagens atuais e justificar as opções tomadas no desenvolvimento do ShopISEL. A análise divide-se em três categorias principais: aplicações de gestão de listas de compras, plataformas de comparação de preços e aplicações próprias de cadeias de supermercados.
+
+\section{Aplicações de gestão de listas de compras}
+\label{sec:3.1}
+
+O mercado de aplicações de listas de compras é relativamente maduro, com diversas soluções estabelecidas que oferecem funcionalidades base de criação e partilha de listas.
+
+O \textbf{Bring!} é uma das aplicações mais populares na Europa para gestão de listas de compras. Permite criar listas colaborativas, partilhá-las com membros da família ou amigos em tempo real, e sugere produtos com base no histórico de compras. A interface é intuitiva e suporta múltiplos idiomas, incluindo o português. No entanto, o Bring! foca-se exclusivamente na gestão de listas, não oferecendo comparação de preços, alertas de variação de preço ou georreferenciação de lojas~\cite{bring-app}.
+
+O \textbf{AnyList} destaca-se pela integração com receitas culinárias, permitindo ao utilizador adicionar automaticamente ingredientes de uma receita à lista de compras. Oferece partilha em tempo real entre utilizadores e suporta organização por categorias. À semelhança do Bring!, não inclui funcionalidades de comparação de preços nem notificações sobre alterações de preço~\cite{anylist-app}.
+
+O \textbf{OurGroceries} é uma solução orientada para o contexto familiar, com sincronização automática entre dispositivos. Destaca-se pela simplicidade e rapidez de utilização, mas mantém o mesmo padrão de ausência de informação de preços, scrapers de dados ou integração com sistemas de retalho~\cite{ourgroceries-app}.
+
+Em comum, estas aplicações partilham a limitação de se focarem exclusivamente na gestão de listas sem qualquer mecanismo de integração com dados de preços reais, tornando-se instrumentos de registo e não de apoio à decisão de compra.
+
+\section{Plataformas de comparação de preços}
+\label{sec:3.2}
+
+Existe um conjunto de soluções orientadas especificamente à comparação de preços entre lojas, algumas com foco no mercado português.
+
+O \textbf{CompraBem} é uma plataforma portuguesa que permite comparar preços de produtos em múltiplos supermercados, incluindo Continente, Pingo Doce e Auchan. Apresenta o preço atual e o histórico de variações, sendo útil para planeamento de compras. Contudo, a plataforma não oferece funcionalidades de gestão de listas de compras, leitura de código de barras ou notificações de descida de preço, sendo mais uma ferramenta de consulta pontual do que de acompanhamento contínuo~\cite{comprabem}.
+
+O \textbf{Pricena}, popular em alguns mercados, agrega preços de produtos de diferentes revendedores online, permitindo a comparação e a configuração de alertas de preço. Porém, o seu foco está no comércio eletrónico, não cobrindo lojas físicas de supermercados, e não oferece funcionalidades de gestão de listas~\cite{pricena}.
+
+Plataformas internacionais como o \textbf{Flipp} (disponível nos EUA e Canadá) oferecem uma abordagem mais abrangente, agregando folhetos digitais de supermercados e permitindo criar listas de compras associadas a promoções. No entanto, esta solução não está disponível no mercado português e depende da adesão voluntária das cadeias de retalho para fornecer dados~\cite{flipp-app}.
+
+A limitação transversal a estas plataformas é a falta de integração com ferramentas de gestão de listas e a ausência de funcionalidades de georreferenciação que permitam ao utilizador identificar a loja mais vantajosa na sua proximidade.
+
+\section{Aplicações próprias de cadeias de supermercados}
+\label{sec:3.3}
+
+As principais cadeias de supermercados portuguesas disponibilizam as suas próprias aplicações móveis, que oferecem funcionalidades como listas de compras digitais, cartão de fidelidade e promoções personalizadas.
+
+A aplicação do \textbf{Continente} permite ao utilizador criar listas de compras, consultar promoções, aceder ao cartão de fidelidade e efetuar encomendas para entrega ou levantamento. A aplicação é bem desenvolvida e oferece uma experiência integrada, mas está confinada ao ecossistema do Continente, não permitindo comparação com outras insígnias~\cite{continente-app}.
+
+De forma análoga, a aplicação do \textbf{Pingo Doce} oferece funcionalidades de lista de compras, promoções e cartão de fidelidade, mas igualmente restrita ao universo da sua cadeia~\cite{pingodoce-app}.
+
+A limitação fundamental destas aplicações é precisamente a sua natureza fechada: cada insígnia apresenta apenas os seus próprios preços e promoções, tornando impossível ao utilizador comparar diretamente preços entre cadeias concorrentes a partir de uma única interface.
+
+\section{Análise comparativa e posicionamento do ShopISEL}
+\label{sec:3.4}
+
+A Tabela~\ref{tab:comparacao} apresenta uma síntese comparativa entre as soluções analisadas e o ShopISEL, considerando as funcionalidades mais relevantes para o utilizador final.
+
+\begin{table}[H]
+\centering
+\caption{Comparação entre soluções existentes e o ShopISEL}
+\label{tab:comparacao}
+\begin{tabularx}{\textwidth}{|X|c|c|c|c|c|}
+\hline
+\textbf{Funcionalidade} & \textbf{Bring!} & \textbf{CompraBem} & \textbf{Continente} & \textbf{Flipp} & \textbf{ShopISEL} \\
+\hline
+Gestão de listas & \checkmark & -- & \checkmark & \checkmark & \checkmark \\
+\hline
+Comparação de preços & -- & \checkmark & -- & \checkmark & \checkmark \\
+\hline
+Múltiplas insígnias & -- & \checkmark & -- & \checkmark & \checkmark \\
+\hline
+Alertas de preço & -- & -- & -- & -- & \checkmark \\
+\hline
+Leitura de código de barras & -- & -- & \checkmark & -- & \checkmark \\
+\hline
+Georreferenciação de lojas & -- & -- & -- & -- & \checkmark \\
+\hline
+Aplicação móvel & \checkmark & -- & \checkmark & \checkmark & \checkmark \\
+\hline
+Aplicação web & -- & \checkmark & \checkmark & -- & \checkmark \\
+\hline
+Notificações push & -- & -- & \checkmark & -- & \checkmark \\
+\hline
+Arquitectura aberta & -- & -- & -- & -- & \checkmark \\
+\hline
+\end{tabularx}
+\end{table}
+
+A análise evidencia que nenhuma das soluções existentes combina, numa única plataforma, a gestão de listas de compras com a comparação de preços entre múltiplas insígnias, alertas de variação de preço e georreferenciação de lojas. O ShopISEL posiciona-se precisamente neste espaço, oferecendo uma solução integrada que une estas funcionalidades, disponível tanto em aplicação móvel como em aplicação web.
+
+Adicionalmente, a arquitetura aberta e extensível do ShopISEL, baseada em microserviços com scrapers independentes por insígnia, permite a adição de novas cadeias de retalho sem impacto na estrutura central do sistema, o que constitui uma vantagem significativa face a soluções fechadas ou dependentes da adesão voluntária dos retalhistas.
+
+\section{Síntese}
+\label{sec:3.5}
+
+O levantamento de soluções existentes demonstra que existe uma lacuna clara no mercado para uma plataforma integrada de gestão de compras que combine listas, comparação de preços entre insígnias, alertas e geolocalização. As soluções atuais focam-se geralmente num único domínio funcional, obrigando o utilizador a recorrer a múltiplas aplicações para cobrir as suas necessidades. O ShopISEL procura colmatar esta lacuna, oferecendo um ecossistema digital completo e centrado na experiência de compra do utilizador.

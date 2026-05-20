@@ -46,3 +46,31 @@ A gestão de dados é assegurada através de uma base de dados relacional, garan
 Adicionalmente, o sistema integra um mecanismo de notificações push, possibilitando o envio de alertas relativos a alterações de preços, contribuindo para uma maior proatividade na tomada de decisão por parte do utilizador. O processo de desenvolvimento é suportado por pipelines de CI/CD, que permitem automatizar tarefas de construção, teste e deploy, assegurando a qualidade e consistência do software.
 
 Em conjunto, esta abordagem permite o desenvolvimento de uma solução robusta, escalável e centrada no utilizador, capaz de responder de forma eficaz aos desafios identificados no domínio do planeamento de compras.
+
+\section{Objetivos}
+\label{sec:1.4}
+
+Os objetivos principais do projeto ShopISEL são:
+
+\begin{enumerate}
+    \item Desenvolver uma plataforma integrada que permita ao utilizador criar e gerir listas de compras, consultar preços de produtos em múltiplas lojas e receber alertas de descida de preço;
+    \item Implementar um sistema de recolha automática de dados de produtos e preços de insígnias de retalho portuguesas, sem dependência de APIs proprietárias;
+    \item Disponibilizar a plataforma através de uma aplicação móvel (Android e iOS) e de uma aplicação web, com experiências de utilização adequadas a cada contexto;
+    \item Integrar georreferenciação de lojas, permitindo ao utilizador identificar as opções mais vantajosas na sua proximidade geográfica;
+    \item Garantir a segurança e privacidade dos dados do utilizador através de um sistema de autenticação centralizado baseado em padrões abertos (OIDC / OAuth 2.0);
+    \item Assegurar a qualidade e a entrega contínua do sistema através de pipelines de \ac{CI/CD} automatizadas.
+\end{enumerate}
+
+\section{Estrutura do Relatório}
+\label{sec:1.5}
+
+O presente relatório está organizado da seguinte forma:
+
+\begin{itemize}
+    \item \textbf{Capítulo 2 — Estado da Arte}: analisa as tecnologias, frameworks e ferramentas mais relevantes para o desenvolvimento da plataforma, justificando as escolhas técnicas efetuadas;
+    \item \textbf{Capítulo 3 — Trabalho Relacionado}: apresenta e compara soluções existentes no domínio das aplicações de compras e comparação de preços, identificando o posicionamento do ShopISEL;
+    \item \textbf{Capítulo 4 — Trabalho Desenvolvido}: descreve em detalhe a arquitetura, os componentes e a implementação de todos os elementos da plataforma;
+    \item \textbf{Capítulo 5 — Processo de Desenvolvimento e Integração Contínua}: descreve o processo de desenvolvimento adotado, a organização dos repositórios e as pipelines de \ac{CI/CD};
+    \item \textbf{Capítulo 6 — Testes e Avaliação}: apresenta a estratégia de testes, os casos de teste implementados e a avaliação funcional do sistema;
+    \item \textbf{Capítulo 7 — Conclusão}: sintetiza o trabalho realizado, reflete sobre os desafios encontrados e identifica direções de evolução futura.
+\end{itemize}

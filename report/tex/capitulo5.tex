@@ -1,5 +1,117 @@
+% !TeX spellcheck = pt_PT
 
-\chapter{EMP and SEP Usage and Workflow}
+\chapter{Processo de Desenvolvimento e Integração Contínua}
 \label{chap:5}
 
-This chapter provides a detailed walkthrough of the ...
+Este capítulo descreve o processo de desenvolvimento adotado no projeto ShopISEL, incluindo a organização dos repositórios, as práticas de controlo de versões, as pipelines de integração e entrega contínua (\ac{CI/CD}) e a estratégia de deployment automatizado.
+
+\section{Organização do Projeto em Repositórios}
+\label{sec:5.1}
+
+O ShopISEL adota uma estrutura multi-repositório, em que cada serviço ou componente principal reside num repositório Git independente. Esta abordagem permite que cada equipa ou componente evolua autonomamente, com o seu próprio ciclo de testes, construção e publicação, sem introduzir dependências de build entre serviços distintos.
+
+Os repositórios principais do projeto são:
+
+\begin{itemize}
+    \item \texttt{list-service} — serviço de listas de compras;
+    \item \texttt{products-service} — serviço de produtos e categorias;
+    \item \texttt{prices-service} — serviço de preços;
+    \item \texttt{stores-service} — serviço de lojas e georreferenciação;
+    \item \texttt{account-service} — serviço de perfil de utilizador;
+    \item \texttt{matchqueue-service} — serviço de correspondência e normalização de dados;
+    \item \texttt{fcm-notification-worker} — worker de notificações push;
+    \item \texttt{scraper-continente} — scraper do website Continente;
+    \item \texttt{scraper-pingodoce} — scraper do website Pingo Doce;
+    \item \texttt{scraper-orchestrator} — orchestrator dos scrapers via GitHub Actions;
+    \item \texttt{frontend} — aplicação web React;
+    \item \texttt{frontend-mobile} — aplicação móvel React Native / Expo;
+    \item \texttt{deploy} — configuração de infraestrutura e gateway Nginx;
+    \item \texttt{keycloack} — configuração do servidor Keycloak.
+\end{itemize}
+
+\section{Controlo de Versões e Estratégia de Branches}
+\label{sec:5.2}
+
+O controlo de versões é assegurado pelo Git, com os repositórios alojados no GitHub. O branch principal de cada repositório é o \texttt{main}, que representa sempre um estado estável e implantável do serviço. O desenvolvimento de novas funcionalidades é realizado em branches separados, que são integrados no \texttt{main} através de Pull Requests após revisão de código.
+
+Esta prática permite que a pipeline de \ac{CI/CD}, configurada no branch \texttt{main}, seja ativada apenas quando o código está pronto para integração, garantindo que apenas código revisto e testado é publicado e implantado.
+
+\section{Pipelines de Integração e Entrega Contínua}
+\label{sec:5.3}
+
+Cada repositório de backend inclui uma pipeline de \ac{CI/CD} implementada com GitHub Actions. As pipelines são ativadas automaticamente em cada push para o branch \texttt{main} e seguem, tipicamente, as seguintes etapas:
+
+\begin{enumerate}
+    \item \textbf{Build e teste}: o código é compilado e os testes automatizados são executados. Esta etapa garante que o código integrado compila sem erros e que os testes de integração passam antes de avançar para as etapas seguintes.
+    \item \textbf{Análise de qualidade}: em alguns serviços, é realizada uma análise estática de código através do SonarCloud, que reporta métricas de qualidade, vulnerabilidades e código duplicado.
+    \item \textbf{Construção da imagem Docker}: a imagem Docker do serviço é construída com base no Dockerfile do repositório.
+    \item \textbf{Publicação da imagem}: a imagem construída é publicada no GitHub Container Registry (\texttt{ghcr.io/shopisel/<service-name>:latest}), ficando disponível para o processo de deployment.
+    \item \textbf{Deploy automático}: as plataformas de hosting (Render.com e Fly.io) são configuradas para detetar novas versões da imagem e realizar o deployment de forma automática.
+\end{enumerate}
+
+Para os scrapers, as pipelines incluem uma etapa adicional de execução agendada por cron, que dispara automaticamente o processo de recolha de dados em intervalos regulares, sem necessidade de intervenção manual.
+
+A Figura~\ref{fig:cicd} ilustra o fluxo geral de \ac{CI/CD} para os serviços de backend.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=0.5cm and 1.4cm,
+    pstep/.style={rectangle, draw, rounded corners=3pt, fill=blue!10,
+                 minimum width=2.5cm, minimum height=0.75cm, font=\small, align=center},
+    arr/.style={-{Stealth[length=5pt]}, thick},
+    lbl/.style={font=\scriptsize}
+]
+\node[pstep] (push)   {Push para\\main};
+\node[pstep, right=1.2cm of push]  (build)  {Build \&\\Testes};
+\node[pstep, right=1.2cm of build] (sonar)  {Análise\\SonarCloud};
+\node[pstep, right=1.2cm of sonar] (docker) {Build\\Docker};
+\node[pstep, right=1.2cm of docker] (reg)   {Publish\\GHCR};
+\node[pstep, right=1.2cm of reg]   (deploy) {Deploy\\(Render/Fly)};
+
+\draw[arr] (push.east)   -- (build.west);
+\draw[arr] (build.east)  -- (sonar.west);
+\draw[arr] (sonar.east)  -- (docker.west);
+\draw[arr] (docker.east) -- (reg.west);
+\draw[arr] (reg.east)    -- (deploy.west);
+\end{tikzpicture}
+\caption{Fluxo de \ac{CI/CD} para os serviços de backend}
+\label{fig:cicd}
+\end{figure}
+
+\section{Reusable Workflows e Orquestração de Scrapers}
+\label{sec:5.4}
+
+Um aspeto relevante do processo de desenvolvimento é a utilização de GitHub Actions reusable workflows para a orquestração dos scrapers. Cada repositório de scraper expõe o seu processo de execução como um workflow reutilizável (\texttt{workflow\_call}), que pode ser invocado por repositórios externos.
+
+O repositório \texttt{scraper-orchestrator} contém um workflow que:
+
+\begin{enumerate}
+    \item Invoca em paralelo os workflows reutilizáveis de cada scraper;
+    \item Aguarda a conclusão de todos os scrapers (\texttt{needs: [...]});
+    \item Aciona o MatchQueue Service para processar os dados recolhidos.
+\end{enumerate}
+
+Esta arquitetura de orquestração permite adicionar suporte a uma nova insígnia simplesmente criando um novo repositório de scraper com um workflow reutilizável e referenciando-o no orchestrator, sem modificar nenhum dos scrapers existentes.
+
+\section{Ferramentas de Suporte ao Desenvolvimento}
+\label{sec:5.5}
+
+O desenvolvimento do ShopISEL recorreu a um conjunto de ferramentas complementares que contribuíram para a qualidade e eficiência do processo:
+
+\begin{itemize}
+    \item \textbf{GitHub Copilot}: ferramenta de assistência à escrita de código baseada em modelos de linguagem de grande dimensão (\textit{Large Language Models}), utilizada para sugestões de código, geração de testes e validação de lógica de negócio.
+    \item \textbf{SonarCloud}: plataforma de análise estática integrada nas pipelines de \ac{CI/CD}, que reporta métricas de qualidade de código, vulnerabilidades de segurança e cobertura de testes.
+    \item \textbf{Docker}: utilizado para containerizar todos os serviços, garantindo reprodutibilidade dos ambientes de desenvolvimento, teste e produção.
+    \item \textbf{GitHub Container Registry}: repositório de imagens Docker integrado no GitHub, utilizado para publicar e versionar as imagens de cada serviço.
+    \item \textbf{Render.com e Fly.io}: plataformas de cloud hosting utilizadas para o deployment dos serviços, com suporte nativo a imagens Docker e deployment automático por webhook.
+\end{itemize}
+
+\section{Gestão de Configuração e Segredos}
+\label{sec:5.6}
+
+A configuração de cada serviço é injetada por variáveis de ambiente, seguindo o princípio dos 12-factor apps. Isto permite que a mesma imagem Docker seja executada em diferentes ambientes (desenvolvimento, staging, produção) com configurações distintas, sem necessidade de recompilação.
+
+Os segredos sensíveis (cadeias de ligação a bases de dados, credenciais do Keycloak, credenciais Firebase, tokens de acesso ao MongoDB) são geridos como GitHub Secrets nos repositórios correspondentes, sendo injetados nas pipelines de \ac{CI/CD} e nos ambientes de produção sem exposição no código fonte.
+
+Esta prática é particularmente relevante para os scrapers, cujos workflows de GitHub Actions necessitam de acesso às credenciais do MongoDB e às configurações do MatchQueue Service para funcionar corretamente.

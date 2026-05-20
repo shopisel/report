@@ -1,10 +1,109 @@
-\chapter{Testing and Evaluation}
+% !TeX spellcheck = pt_PT
 
+\chapter{Testes e Avaliação}
 \label{chap:6}
 
-The testing and evaluation phase is a key part of the development process, as it
-demonstrates the system's functionality, reliability, and security. It confirms
-the system's ability to perform as intended and identifies potential
-vulnerabilities.
+A fase de testes e avaliação é parte integrante do processo de desenvolvimento, permitindo validar o comportamento do sistema, identificar regressões e garantir a conformidade dos contratos das APIs. Este capítulo descreve a estratégia de testes adotada no ShopISEL, os mecanismos de isolamento utilizados e os resultados obtidos.
 
-This chapter details the testing methodology applied to ...
+\section{Estratégia de Testes}
+\label{sec:6.1}
+
+O ShopISEL adota uma abordagem de testes de integração de ponta a ponta (end-to-end) ao nível de cada serviço, em detrimento de testes unitários isolados. Esta opção justifica-se pela natureza dos serviços: dado que a maioria da lógica de negócio se manifesta na interação entre endpoints HTTP, persistência em base de dados e validação de autenticação, os testes de integração oferecem um nível de confiança superior sobre o comportamento real do sistema.
+
+Os testes são implementados com o framework xUnit~\cite{xunit-docs}, amplamente adotado no ecossistema .NET, e recorrem à classe \texttt{WebApplicationFactory<Program>} da ASP.NET Core para inicializar o serviço em memória, sem necessidade de servidores externos~\cite{aspnetcore-testing}.
+
+Os serviços com cobertura de testes de integração são:
+\begin{itemize}
+    \item \textbf{List Service} (\texttt{ListService.Tests});
+    \item \textbf{Products Service} (\texttt{ProductService.Tests});
+    \item \textbf{Prices Service} (\texttt{PricesService.Tests}).
+\end{itemize}
+
+\section{Infraestrutura de Testes}
+\label{sec:6.2}
+
+Para que os testes de integração possam ser executados de forma isolada e reprodutível, sem depender de serviços externos como PostgreSQL em produção ou Keycloak, são utilizados dois mecanismos de substituição:
+
+\subsection{Base de dados em memória com SQLite}
+\label{sec:6.2.1}
+
+A classe \texttt{ListServiceApiFactory} (e equivalentes nos outros serviços) substitui o contexto de base de dados da aplicação por uma instância SQLite com ficheiro temporário, criada para cada execução de testes e eliminada no final. Esta abordagem garante que:
+
+\begin{itemize}
+    \item Cada execução de testes parte de um estado limpo e previsível;
+    \item Não é necessário provisionar uma instância de PostgreSQL para executar os testes localmente ou nas pipelines de \ac{CI/CD};
+    \item Os testes são completamente deterministas e não interferem entre si.
+\end{itemize}
+
+\subsection{Handler de autenticação de teste}
+\label{sec:6.2.2}
+
+Dado que os endpoints protegidos requerem um token \ac{JWT} válido emitido pelo Keycloak, os testes substituem o esquema de autenticação real por um handler personalizado (\texttt{TestAuthHandler}). Este handler autentica automaticamente cada pedido HTTP de teste com um utilizador fixo, permitindo testar o comportamento dos endpoints sem necessidade de uma instância Keycloak em execução.
+
+Para testar cenários de isolamento entre utilizadores, é possível criar clientes HTTP adicionais com identidades distintas, modificando o header de utilizador de teste (\texttt{X-Test-User}). Esta técnica é utilizada nos testes de isolamento descritos na Secção~\ref{sec:6.3}.
+
+\section{Casos de Teste do List Service}
+\label{sec:6.3}
+
+O conjunto de testes do List Service cobre os principais fluxos de negócio e requisitos de segurança do serviço.
+
+\subsection{Fluxo CRUD completo}
+\label{sec:6.3.1}
+
+O teste \texttt{ListsCrudFlow\_WorksEndToEnd} valida o ciclo de vida completo de uma lista de compras:
+
+\begin{enumerate}
+    \item \textbf{Criação}: submete um pedido \texttt{POST /lists} com nome e dois itens. Verifica que a resposta tem código HTTP 201, que o identificador da lista começa com o prefixo \texttt{list\_} e que os dois itens foram criados com identificadores positivos.
+    \item \textbf{Consulta}: faz \texttt{GET /lists/\{id\}} e verifica que o nome da lista corresponde ao submetido.
+    \item \textbf{Atualização}: submete \texttt{PUT /lists/\{id\}} com novo nome e um único item diferente. Verifica que a resposta reflete as alterações corretamente.
+    \item \textbf{Eliminação}: faz \texttt{DELETE /lists/\{id\}} e verifica que a resposta é HTTP 204. Subsequentemente, um \texttt{GET /lists/\{id\}} deve retornar HTTP 404.
+\end{enumerate}
+
+\subsection{Isolamento por proprietário}
+\label{sec:6.3.2}
+
+O teste \texttt{ListOwnerIsolation\_OtherUserCannotAccessList} verifica que um utilizador não consegue aceder às listas de outro utilizador:
+
+\begin{enumerate}
+    \item O utilizador A cria uma lista;
+    \item Um cliente HTTP configurado com a identidade do utilizador B tenta obter e eliminar a lista;
+    \item Verifica-se que ambas as operações retornam HTTP 404, confirmando que o isolamento por \texttt{OwnerId} funciona corretamente.
+\end{enumerate}
+
+Este teste é fundamental para garantir que a privacidade dos dados do utilizador é respeitada, mesmo perante pedidos autenticados de outros utilizadores.
+
+\subsection{Filtragem no GET /lists}
+\label{sec:6.3.3}
+
+O teste \texttt{GetAll\_ReturnsOnlyListsFromAuthenticatedUser} verifica que o endpoint \texttt{GET /lists} devolve apenas as listas do utilizador autenticado:
+
+\begin{enumerate}
+    \item O utilizador A e o utilizador B criam, cada um, uma lista;
+    \item O utilizador A executa \texttt{GET /lists} e verifica que a resposta contém a sua lista mas não a do utilizador B.
+\end{enumerate}
+
+\section{Execução dos Testes nas Pipelines de CI/CD}
+\label{sec:6.4}
+
+Os testes são integrados nas pipelines de \ac{CI/CD} de cada serviço. Na etapa de \textit{build e teste}, o comando \texttt{dotnet test} é executado, correndo todos os testes de integração do projeto. Se algum teste falhar, a pipeline é interrompida e o código não avança para a etapa de construção da imagem Docker, impedindo que código com regressões seja publicado ou implantado.
+
+Esta integração garante que qualquer alteração ao código que quebre um contrato de API ou introduza uma regressão de comportamento é detetada automaticamente, antes de chegar ao ambiente de produção.
+
+\section{Avaliação Funcional}
+\label{sec:6.5}
+
+Para além dos testes automatizados, o sistema foi sujeito a validação funcional manual, que permitiu verificar o comportamento integrado de todos os componentes em conjunto — aspeto que os testes de integração por serviço não cobrem, dado que cada serviço é testado de forma isolada.
+
+A validação funcional incluiu os seguintes cenários:
+
+\begin{itemize}
+    \item \textbf{Registo e autenticação}: criação de conta no Keycloak, login a partir da aplicação web e da aplicação móvel, renovação de token e logout;
+    \item \textbf{Gestão de listas}: criação, edição e eliminação de listas de compras na aplicação web e na aplicação móvel, com verificação da sincronização entre dispositivos;
+    \item \textbf{Pesquisa de produtos}: pesquisa por nome e por categoria, consulta de preços por loja;
+    \item \textbf{Leitura de código de barras}: identificação de produtos através da câmara na aplicação móvel;
+    \item \textbf{Georreferenciação}: apresentação de lojas próximas com base na localização do dispositivo;
+    \item \textbf{Notificações push}: registo do token FCM no arranque da aplicação móvel e receção de alertas de descida de preço;
+    \item \textbf{Pipeline de scraping}: execução dos scrapers, verificação dos dados no MongoDB, processamento pelo MatchQueue Service e consulta dos preços atualizados na aplicação.
+\end{itemize}
+
+A validação funcional confirmou que o sistema se comporta de acordo com os requisitos definidos, com tempos de resposta adequados às necessidades de utilização em contexto real de compra.
