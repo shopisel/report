@@ -47,7 +47,7 @@ Adicionalmente, o sistema integra um mecanismo de notificações push, possibili
 
 Em conjunto, esta abordagem permite o desenvolvimento de uma solução robusta, escalável e centrada no utilizador, capaz de responder de forma eficaz aos desafios identificados no domínio do planeamento de compras.
 
-\section{Objetivos}
+\section{Objectives}
 \label{sec:1.4}
 
 Os objetivos principais do projeto ShopISEL são:
@@ -61,8 +61,37 @@ Os objetivos principais do projeto ShopISEL são:
     \item Assegurar a qualidade e a entrega contínua do sistema através de pipelines de \ac{CI/CD} automatizadas.
 \end{enumerate}
 
-\section{Estrutura do Relatório}
+\section{System Requirements}
 \label{sec:1.5}
+
+Os requisitos do sistema foram definidos com base nas necessidades identificadas no âmbito do projeto e orientaram as decisões de arquitetura e implementação.
+
+\subsection{Requisitos Funcionais}
+\label{sec:1.5.1}
+
+\begin{enumerate}
+    \item O sistema deve permitir ao utilizador criar, consultar, atualizar e eliminar listas de compras pessoais;
+    \item O sistema deve apresentar preços atualizados de produtos em múltiplas lojas e insígnias;
+    \item O sistema deve notificar o utilizador quando o preço de um produto favorito descer;
+    \item O sistema deve suportar a identificação de produtos através da leitura de códigos de barras pela câmara do dispositivo móvel;
+    \item O sistema deve apresentar lojas ordenadas por proximidade geográfica com base na localização do utilizador;
+    \item O sistema deve autenticar e autorizar utilizadores, garantindo o isolamento de dados entre contas distintas;
+    \item O sistema deve recolher automaticamente dados de produtos e preços de lojas de retalho, sem dependência de APIs proprietárias.
+\end{enumerate}
+
+\subsection{Requisitos Não Funcionais}
+\label{sec:1.5.2}
+
+\begin{enumerate}
+    \item \textbf{Segurança}: a autenticação deve seguir padrões abertos (\ac{OIDC} / OAuth 2.0), e os dados de sessão devem ser armazenados de forma cifrada nos dispositivos;
+    \item \textbf{Escalabilidade}: a arquitetura deve permitir a adição de novos serviços e insígnias sem impacto nos componentes existentes;
+    \item \textbf{Disponibilidade}: os serviços de backend devem estar continuamente disponíveis, com deployment automático em plataformas de cloud;
+    \item \textbf{Manutenibilidade}: cada serviço deve ter o seu ciclo de build, teste e deployment independente, suportado por pipelines de \ac{CI/CD};
+    \item \textbf{Portabilidade}: as aplicações cliente devem estar disponíveis em plataformas web e móveis (Android e iOS).
+\end{enumerate}
+
+\section{Report Structure}
+\label{sec:1.6}
 
 O presente relatório está organizado da seguinte forma:
 

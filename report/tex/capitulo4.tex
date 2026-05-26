@@ -110,6 +110,40 @@ Os pedidos das aplicações cliente chegam ao sistema através de um gateway Ngi
 
 A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue Service processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging.
 
+\subsection{Modelo de Dados}
+\label{sec:4.1.1}
+
+A Figura~\ref{fig:er} apresenta o modelo de dados simplificado do sistema, evidenciando as principais entidades e as relações entre elas. As entidades estão distribuídas pelos diferentes serviços de backend, sendo cada uma gerida pelo serviço responsável pelo respetivo domínio funcional.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    ent/.style={rectangle, draw=black, fill=blue!8, rounded corners=3pt,
+                minimum width=3.0cm, minimum height=0.75cm,
+                font=\small\bfseries, align=center},
+    arr/.style={-{Stealth[length=5pt]}, thick},
+    lbl/.style={font=\scriptsize, fill=white, inner sep=1pt}
+]
+
+\node[ent] (sl)    at (0,0)     {ShoppingList};
+\node[ent] (sli)   at (4.6,0)   {ShoppingListItem};
+\node[ent] (prod)  at (9.2,0)   {Product};
+\node[ent] (cat)   at (9.2,-2.8){Category};
+\node[ent] (store) at (4.6,-2.8){Store};
+\node[ent] (price) at (0,-2.8)  {Price};
+
+\draw[arr] (sl.east)     -- node[lbl,above]{1:N} (sli.west);
+\draw[arr] (sli.east)    -- node[lbl,above]{N:1} (prod.west);
+\draw[arr] (prod.south)  -- node[lbl,right]{N:1} (cat.north);
+\draw[arr] (sli.south)   -- node[lbl,right]{N:1} (store.north);
+\draw[arr] (price.east)  -- node[lbl,above]{N:1} (store.west);
+\draw[arr] (price.north) -- ++(0,0.6) -| node[lbl,above,pos=0.75]{N:1} (prod.south);
+
+\end{tikzpicture}
+\caption{Modelo de dados simplificado do sistema ShopISEL. A relação \texttt{parentId} auto-referencial da entidade \textit{Category} está omitida por clareza visual.}
+\label{fig:er}
+\end{figure}
+
 \section{Serviços de Backend}
 \label{sec:4.2}
 
@@ -173,12 +207,30 @@ O Prices Service mantém um registo dos preços de produtos por loja, incluindo 
 
 Este modelo permite ao sistema apresentar ao utilizador não só o preço atual, mas também o histórico de promoções e a variação de preços ao longo do tempo, suportando a funcionalidade de alertas de descida de preço.
 
+Os endpoints expostos são:
+
+\begin{itemize}
+    \item \texttt{GET /prices?productId=\{id\}} — devolve os preços de um produto em todas as lojas disponíveis;
+    \item \texttt{GET /prices?productId=\{id\}\&storeId=\{id\}} — devolve o preço de um produto numa loja específica;
+    \item \texttt{POST /prices} — regista ou atualiza o preço de um produto numa loja (utilizado internamente pelo MatchQueue Service);
+    \item \texttt{GET /health} — endpoint de monitorização.
+\end{itemize}
+
 \subsection{Stores Service}
 \label{sec:4.2.4}
 
 O Stores Service gere informação sobre lojas físicas, sendo fundamental para a funcionalidade de georreferenciação. A entidade \textbf{StoreEntity} inclui o nome e marca da loja, morada, cidade e coordenadas geográficas (\texttt{Latitude}, \texttt{Longitude}).
 
 A presença de coordenadas geográficas permite ao sistema calcular a distância entre o utilizador e cada loja, apresentando os preços mais vantajosos em função da proximidade geográfica — um dos elementos diferenciadores do ShopISEL.
+
+Os endpoints expostos são:
+
+\begin{itemize}
+    \item \texttt{GET /stores} — devolve a lista de todas as lojas registadas;
+    \item \texttt{GET /stores/\{storeId\}} — devolve os detalhes de uma loja específica;
+    \item \texttt{GET /stores/nearby?lat=\{lat\}\&lon=\{lon\}\&radius=\{km\}} — devolve as lojas num raio geográfico em torno das coordenadas fornecidas, ordenadas por proximidade;
+    \item \texttt{GET /health} — endpoint de monitorização.
+\end{itemize}
 
 \subsection{Account Service}
 \label{sec:4.2.5}
