@@ -56,18 +56,17 @@ A Figura~\ref{fig:cicd} ilustra o fluxo geral de \ac{CI/CD} para os serviços de
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    node distance=0.5cm and 1.4cm,
+    node distance=0.5cm and 0.6cm,
     pstep/.style={rectangle, draw, rounded corners=3pt, fill=blue!10,
-                 minimum width=2.5cm, minimum height=0.75cm, font=\small, align=center},
-    arr/.style={-{Stealth[length=5pt]}, thick},
-    lbl/.style={font=\scriptsize}
+                 minimum width=2.1cm, minimum height=0.75cm, font=\small, align=center},
+    arr/.style={-{Stealth[length=5pt]}, thick}
 ]
 \node[pstep] (push)   {Push para\\main};
-\node[pstep, right=1.2cm of push]  (build)  {Build \&\\Testes};
-\node[pstep, right=1.2cm of build] (sonar)  {Análise\\SonarCloud};
-\node[pstep, right=1.2cm of sonar] (docker) {Build\\Docker};
-\node[pstep, right=1.2cm of docker] (reg)   {Publish\\GHCR};
-\node[pstep, right=1.2cm of reg]   (deploy) {Deploy\\(Render/Fly)};
+\node[pstep, right=0.6cm of push]  (build)  {Build \&\\Testes};
+\node[pstep, right=0.6cm of build] (sonar)  {Análise\\SonarCloud};
+\node[pstep, right=0.6cm of sonar] (docker) {Build\\Docker};
+\node[pstep, right=0.6cm of docker] (reg)   {Publish\\GHCR};
+\node[pstep, right=0.6cm of reg]   (deploy) {Deploy\\(Render/Fly)};
 
 \draw[arr] (push.east)   -- (build.west);
 \draw[arr] (build.east)  -- (sonar.west);

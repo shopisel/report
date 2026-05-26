@@ -71,12 +71,15 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 \draw[arr] (web.south) -- (nginx.north west);
 \draw[arr] (mobile.south) -- (nginx.north east);
 
-%--- Gateway → serviços ---
-\draw[arr] (nginx.south) -- (list.north);
-\draw[arr] (nginx.south) -- (products.north);
-\draw[arr] (nginx.south) -- (prices.north);
-\draw[arr] (nginx.south) -- (stores.north);
-\draw[arr] (nginx.south) -- (account.north);
+%--- Gateway → serviços (via barra de distribuição horizontal) ---
+\coordinate (bus) at ([yshift=-0.5cm]nginx.south);
+\draw (nginx.south) -- (bus);
+\draw (bus -| account.north) -- (bus -| stores.north);
+\draw[arr] (bus -| account.north)  -- (account.north);
+\draw[arr] (bus -| list.north)     -- (list.north);
+\draw[arr] (bus -| products.north) -- (products.north);
+\draw[arr] (bus -| prices.north)   -- (prices.north);
+\draw[arr] (bus -| stores.north)   -- (stores.north);
 
 %--- Serviços → DBs ---
 \draw[arr] (account.south)  -- (db-acc.north);
