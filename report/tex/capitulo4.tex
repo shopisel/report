@@ -15,64 +15,59 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    node distance=1.2cm and 1.6cm,
     service/.style={rectangle, draw=black, rounded corners=4pt, fill=white,
-                    minimum width=2.6cm, minimum height=0.85cm, font=\small, align=center},
+                    minimum width=2.2cm, minimum height=0.8cm, font=\small, align=center},
     client/.style={rectangle, draw=black!70, rounded corners=4pt, fill=blue!12,
-                   minimum width=2.6cm, minimum height=0.85cm, font=\small, align=center},
+                   minimum width=2.4cm, minimum height=0.8cm, font=\small, align=center},
     db/.style={cylinder, draw=black!70, fill=gray!15, shape border rotate=90,
-               minimum width=2cm, minimum height=0.7cm, font=\scriptsize, align=center},
+               minimum width=1.8cm, minimum height=0.65cm, font=\scriptsize, align=center},
     ext/.style={rectangle, draw=black!70, rounded corners=4pt, fill=orange!15,
-                minimum width=2.6cm, minimum height=0.85cm, font=\small, align=center},
+                minimum width=2.2cm, minimum height=0.8cm, font=\small, align=center},
     gw/.style={rectangle, draw=black, rounded corners=4pt, fill=yellow!20,
-               minimum width=3cm, minimum height=0.85cm, font=\small\bfseries, align=center},
+               minimum width=3cm, minimum height=0.8cm, font=\small\bfseries, align=center},
     arr/.style={-{Stealth[length=5pt]}, thick},
     darr/.style={<->, thick, dashed}
 ]
 
-%--- Clientes ---
-\node[client] (web) {Web App\\(React + Vite)};
-\node[client, right=2.2cm of web] (mobile) {Mobile App\\(React Native)};
+%--- Linha 1: Clientes (y=0) ---
+\node[client] (web)    at (0,0)   {Web App\\(React + Vite)};
+\node[client] (mobile) at (4,0)   {Mobile App\\(React Native)};
 
-%--- Gateway ---
-\node[gw, below=1.0cm of web, xshift=1.4cm] (nginx) {Nginx Gateway};
+%--- Linha 2: Gateway (y=-1.8) ---
+\node[gw]     (nginx)  at (2,-1.8) {Nginx Gateway};
+\node[ext]    (kc)     at (7,-1.8) {Keycloak\\(Auth)};
+\node[ext]    (fcm)    at (7,-3.2) {Firebase\\FCM};
 
-%--- Serviços ---
-\node[service, below left=1.4cm and 2.0cm of nginx] (list)    {List\\Service};
-\node[service, left=0.5cm of list]                  (account) {Account\\Service};
-\node[service, right=0.5cm of list]                 (products){Products\\Service};
-\node[service, right=0.5cm of products]             (prices)  {Prices\\Service};
-\node[service, right=0.5cm of prices]               (stores)  {Stores\\Service};
+%--- Linha 3: Serviços (y=-3.5) ---
+\node[service] (account)  at (-3.5,-3.5) {Account\\Service};
+\node[service] (list)     at (-1.5,-3.5) {List\\Service};
+\node[service] (products) at ( 0.5,-3.5) {Products\\Service};
+\node[service] (prices)   at ( 2.5,-3.5) {Prices\\Service};
+\node[service] (stores)   at ( 4.5,-3.5) {Stores\\Service};
 
-%--- Bases de dados ---
-\node[db, below=0.7cm of account]  (db-acc)  {PostgreSQL};
-\node[db, below=0.7cm of list]     (db-list) {PostgreSQL};
-\node[db, below=0.7cm of products] (db-prod) {PostgreSQL};
-\node[db, below=0.7cm of prices]   (db-pr)   {PostgreSQL};
-\node[db, below=0.7cm of stores]   (db-st)   {PostgreSQL};
+%--- Linha 4: Bases de dados (y=-5.2) ---
+\node[db] (db-acc)  at (-3.5,-5.2) {PostgreSQL};
+\node[db] (db-list) at (-1.5,-5.2) {PostgreSQL};
+\node[db] (db-prod) at ( 0.5,-5.2) {PostgreSQL};
+\node[db] (db-pr)   at ( 2.5,-5.2) {PostgreSQL};
+\node[db] (db-st)   at ( 4.5,-5.2) {PostgreSQL};
 
-%--- Serviços externos ---
-\node[ext, right=2.8cm of nginx]  (keycloak) {Keycloak\\(Auth)};
-\node[ext, below=0.5cm of keycloak] (fcm)    {Firebase\\FCM};
+%--- Linha 5: MatchQueue (y=-7.0) ---
+\node[db]      (mongo)  at (-1,-7.0) {MongoDB};
+\node[service] (mq)     at ( 1.5,-7.0) {MatchQueue\\Service};
+\node[db]      (db-mq)  at ( 4,-7.0) {PostgreSQL};
 
-%--- MatchQueue ---
-\node[service, below=2.8cm of prices] (mq) {MatchQueue\\Service};
-\node[db, left=0.6cm of mq]  (mongo)   {MongoDB};
-\node[db, right=0.6cm of mq] (db-mq)   {PostgreSQL};
+%--- Linha 6: Scrapers + FCM Worker (y=-8.8) ---
+\node[service] (sc-cont) at (-2,-8.8) {Scraper\\Continente};
+\node[service] (sc-pd)   at ( 0.5,-8.8) {Scraper\\Pingo Doce};
+\node[service] (fcmw)    at ( 4,-8.8) {FCM\\Worker};
 
-%--- Scrapers ---
-\node[service, below=1.3cm of mq, xshift=-2cm] (sc-cont) {Scraper\\Continente};
-\node[service, right=0.8cm of sc-cont]          (sc-pd)   {Scraper\\Pingo Doce};
-
-%--- FCM Worker ---
-\node[service, below=1.3cm of db-mq] (fcmw) {FCM\\Worker};
-
-%--- Ligações cliente → gateway ---
-\draw[arr] (web.south) -- (nginx.north west);
+%--- Clientes → Gateway ---
+\draw[arr] (web.south)    -- (nginx.north west);
 \draw[arr] (mobile.south) -- (nginx.north east);
 
-%--- Gateway → serviços (via barra de distribuição horizontal) ---
-\coordinate (bus) at ([yshift=-0.5cm]nginx.south);
+%--- Gateway → Serviços (barra horizontal) ---
+\coordinate (bus) at (2,-2.55);
 \draw (nginx.south) -- (bus);
 \draw (bus -| account.north) -- (bus -| stores.north);
 \draw[arr] (bus -| account.north)  -- (account.north);
@@ -89,20 +84,20 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 \draw[arr] (stores.south)   -- (db-st.north);
 
 %--- Auth ---
-\draw[darr] (nginx.east)    -- (keycloak.west);
-\draw[darr] (list.east)     -| (keycloak.south);
+\draw[darr] (nginx.east)  -- (kc.west);
+\draw[darr] (list.east)   -| (kc.south);
 
-%--- Scrapers → Mongo ---
+%--- Scrapers → MongoDB ---
 \draw[arr] (sc-cont.north) -- (mongo.south);
 \draw[arr] (sc-pd.north)   -- (mongo.south);
 
 %--- MatchQueue ---
-\draw[arr] (mongo.east)  -- (mq.west);
-\draw[arr] (mq.east)     -- (db-mq.west);
+\draw[arr] (mongo.east)   -- (mq.west);
+\draw[arr] (mq.east)      -- (db-mq.west);
 
 %--- FCM Worker ---
-\draw[arr] (db-mq.south) -- (fcmw.north);
-\draw[arr] (fcmw.east)   -| (fcm.south);
+\draw[arr] (db-mq.south)  -- (fcmw.north);
+\draw[arr] (fcmw.east)    -| (fcm.south);
 
 \end{tikzpicture}
 \caption{Visão geral da arquitetura do sistema ShopISEL}
