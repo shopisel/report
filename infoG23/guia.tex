@@ -1,0 +1,186 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{parskip}
+\usepackage{needspace}
+\usepackage{helvet}
+\usepackage{graphicx}
+
+\renewcommand{\familydefault}{\sfdefault}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+
+% Evita que um t\'itulo de sec\c{c}\~ao fique isolado no fim de uma p\'agina.
+% Se n\~ao houver espa\c{c}o suficiente para o t\'itulo e algum conte\'udo,
+% a sec\c{c}\~ao passa naturalmente para a p\'agina seguinte.
+\let\oldsection\section
+\renewcommand{\section}{\Needspace{8\baselineskip}\oldsection}
+
+\begin{document}
+
+\begin{titlepage}
+    \thispagestyle{empty}
+    \begin{center}
+        \vspace*{0.5cm}
+        \includegraphics[width=0.8\textwidth]{isel_logo.png}
+
+        \vfill
+
+
+        {\Huge \textbf{Guia do Arguente}}\\[0.35cm]
+        {\Large SHOPISEL}\\[0.9cm]
+        {\large Aplica\c{c}\~ao de Lista de Compras com Pre\c{c}os e Alertas}\\[1.6cm]
+        
+\includegraphics[width=0.42\textwidth]{shopisel_logo.png}\\[1.2cm]
+        \begin{tabular}{c}
+            Martim Monteiro Nº51619 \\
+            Alexandre Tavares Nº51271 \\
+            Pedro Gomes Nº51423
+        \end{tabular}\\[1.2cm]
+
+        {\large Orientadores: Doutor Fernando Miguel Gamboa de Carvalho, João Pereira}\\[1.2cm]
+
+        {\large 1 Junho de 2026}
+
+        \vfill
+    \end{center}
+\end{titlepage}
+
+\section{Identifica\c{c}\~ao do projeto}
+
+\textbf{T\'itulo do projeto:} SHOPISEL -- Aplica\c{c}\~ao de Lista de Compras com Pre\c{c}os e Alertas
+
+\textbf{Orientadores:} Doutor Fernando Miguel Gamboa de Carvalho, João Pereira
+
+
+\section{Reposit\'orio e acesso ao c\'odigo}
+
+\textbf{URL da organiza\c{c}\~ao GitHub:} \texttt{https://github.com/shopisel}
+
+O projeto encontra-se dividido em v\'arios reposit\'orios dentro da organiza\c{c}\~ao GitHub indicada. Cada reposit\'orio corresponde a uma componente funcional da solu\c{c}\~ao, permitindo uma separa\c{c}\~ao clara entre frontend, servi\c{c}os backend, scrapers e infraestrutura.
+\section{Descri\c{c}\~ao da organiza\c{c}\~ao do dossier}
+
+O projeto encontra-se organizado por componentes funcionais, separando aplica\c{c}\~oes cliente, servi\c{c}os backend, scrapers, infraestrutura e relat\'orio. Esta organiza\c{c}\~ao facilita a navega\c{c}\~ao no c\'odigo e a avalia\c{c}\~ao independente de cada parte da solu\c{c}\~ao.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.5cm} >{\raggedright\arraybackslash}p{8.8cm}}
+\textbf{Pasta} & \textbf{Conte\'udo principal} \\
+\hline
+\texttt{frontend/} & Aplica\c{c}\~ao web principal do ShopISEL, desenvolvida em React com Vite, respons\'avel pela experi\^encia de utiliza\c{c}\~ao no browser. \\
+\texttt{frontend-mobile/} & Aplica\c{c}\~ao m\'ovel em Expo React Native, com integra\c{c}\~ao com Firebase para notifica\c{c}\~oes push e funcionalidades orientadas ao uso em smartphone. \\
+\texttt{account-service/} & Microservi\c{c}o autenticado respons\'avel pela conta do utilizador, sincroniza\c{c}\~ao inicial com o token, gest\~ao de favoritos e registo de tokens FCM para push notifications. \\
+\texttt{list-service/} & Microservi\c{c}o autenticado de gest\~ao de listas de compras, incluindo cria\c{c}\~ao, consulta, edi\c{c}\~ao, remo\c{c}\~ao e atualiza\c{c}\~ao dos itens de cada lista. \\
+\texttt{products-service/} & Microservi\c{c}o de produtos e categorias, com pesquisa por nome, filtragem por categoria ou identificadores e sugest\~ao de produtos relacionados. \\
+\texttt{prices-service/} & Microservi\c{c}o respons\'avel pelo armazenamento e consulta de pre\c{c}os de produtos por loja, permitindo obter, criar, atualizar e remover registos de pre\c{c}o. \\
+\texttt{stores-service/} & Microservi\c{c}o de lojas, usado para consultar e gerir estabelecimentos por identificador, marca ou nome, incluindo dados de localiza\c{c}\~ao. \\
+\texttt{matchqueue-service/} & Servi\c{c}o que processa resultados de scraping ap\'os a recolha, fazendo o emparelhamento de produtos, atualiza\c{c}\~ao de pre\c{c}os e enfileiramento de eventos associados. \\
+\texttt{fcm-notification-worker/} & Worker dedicado ao envio/processamento de notifica\c{c}\~oes push atrav\'es do Firebase Cloud Messaging. \\
+\texttt{scraper-continente/} & Scraper em .NET com Playwright que percorre categorias do Continente e recolhe produtos, disponibilidade, imagens e informa\c{c}\~ao de pre\c{c}o. \\
+\texttt{scraper-pingodoce/} & Scraper em .NET com Playwright para produtos do Pingo Doce, com exporta\c{c}\~ao para JSON, persist\^encia em MongoDB e capacidade de disparar o \texttt{matchqueue-service}. \\
+\texttt{all-stores-scraper/} & Ferramenta de recolha de lojas f\'isicas de retalhistas, com exporta\c{c}\~ao em JSON, CSV e SQL para posterior carga na base de dados. \\
+\texttt{scraper-orchestrator/} & Reposit\'orio de orquestra\c{c}\~ao que executa os scrapers de diferentes ins\'ignias em paralelo via GitHub Actions e aciona um worker final no fim do processo. \\
+\texttt{shopisel\_custom\_label/} & Reposit\'orio auxiliar de personaliza\c{c}\~ao visual/\emph{branding}, atualmente usado para definir configura\c{c}\~oes de marca e ativos gr\'aficos (por exemplo, variante visual Continente), n\~ao correspondendo a um microservi\c{c}o backend. \\
+\texttt{keycloack/} & Configura\c{c}\~ao de autentica\c{c}\~ao centralizada com Keycloak e respetivo deploy em Fly.io. \\
+\texttt{deploy/} & Configura\c{c}\~oes de infraestrutura e publica\c{c}\~ao, incluindo gateway/proxy, ficheiros de deploy para Fly.io e defini\c{c}\~oes para Render. \\
+\texttt{report/} & Relat\'orio principal e artefactos em \LaTeX\ associados \`a documenta\c{c}\~ao acad\'emica do projeto. \\
+\end{longtable}
+\section{Ambiente de demonstra\c{c}\~ao em Fly.io}
+
+Para al\'em da execu\c{c}\~ao local, os servi\c{c}os principais da solu\c{c}\~ao encontram-se publicados em Fly.io. Assim, o arguente pode validar a aplica\c{c}\~ao atrav\'es do ambiente remoto, sem necessidade de executar todos os microservi\c{c}os localmente.
+
+\textbf{URL do gateway em Fly.io:} \url{https://shopisel-gateway-fly.fly.dev/}
+
+Recomenda-se que a valida\c{c}\~ao comece pelo ambiente publicado, utilizando a conta de demonstra\c{c}\~ao indicada neste documento. A execu\c{c}\~ao local pode ser utilizada posteriormente para an\'alise t\'ecnica individual de cada componente.
+
+\section{Tecnologias principais}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item Frontend web em React com Vite;
+    \item Frontend mobile em Expo React Native;
+    \item Backend em .NET, organizado em microservi\c{c}os;
+    \item Autentica\c{c}\~ao centralizada com Keycloak;
+    \item Notifica\c{c}\~oes push com Firebase Cloud Messaging;
+    \item Deploy e encaminhamento via Fly.io;
+    \item Recolha autom\'atica de dados com scrapers dedicados por ins\'ignia.
+\end{itemize}
+
+\section{Informa\c{c}\~ao para instala\c{c}\~ao e execu\c{c}\~ao local}
+
+\subsection{Frontend web}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item Entrar na pasta \texttt{frontend/};
+    \item Instalar depend\^encias com \texttt{npm install};
+    \item Executar em desenvolvimento com \texttt{npm run dev};
+    \item Configurar o ficheiro de ambiente com base em \texttt{frontend/.env.example}.
+\end{itemize}
+
+\subsection{Frontend mobile}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item Entrar na pasta \texttt{frontend-mobile/};
+    \item Instalar depend\^encias com \texttt{npm install};
+    \item Iniciar com \texttt{npx expo start --go};
+    \item Usar Expo Go ou emulador/dispositivo compat\'ivel para testes.
+\end{itemize}
+
+\subsection{Servi\c{c}os backend}
+
+Apesar de os servi\c{c}os estarem dispon\'iveis em Fly.io para demonstra\c{c}\~ao, cada microservi\c{c}o backend tamb\'em pode ser executado individualmente em ambiente local. O procedimento base \`e o seguinte:
+
+\begin{itemize}[leftmargin=1.8em]
+    \item entrar na pasta do servi\c{c}o pretendido;
+    \item executar \texttt{dotnet restore src};
+    \item executar \texttt{dotnet test src}, quando existirem testes;
+    \item executar \texttt{dotnet run --project src/<NomeDoProjeto>}.
+\end{itemize}
+
+Os servi\c{c}os autenticados requerem, pelo menos, configura\c{c}\~oes de \texttt{ConnectionStrings} e de integra\c{c}\~ao com Keycloak, nomeadamente valores para \texttt{Authority}, \texttt{Audience} e outras chaves equivalentes definidas nos respetivos \texttt{README}s e \texttt{appsettings}.
+
+\subsection{Infraestrutura e autentica\c{c}\~ao}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item O gateway e os upstreams encontram-se documentados nos ficheiros de configura\c{c}\~ao do Fly.io, nomeadamente em \texttt{deploy/fly.toml};
+    \item O Keycloak encontra-se configurado na pasta \texttt{keycloack/};
+    \item Para o Keycloak, devem ser definidos os segredos de administra\c{c}\~ao e de acesso \`a base de dados indicados em \texttt{keycloack/README.md};
+    \item O sistema depende de PostgreSQL e, para algumas funcionalidades, de Firebase Cloud Messaging.
+\end{itemize}
+
+\section{Credenciais de acesso}
+
+Para a demonstra\c{c}\~ao e valida\c{c}\~ao do sistema, o arguente pode utilizar a seguinte conta de teste:
+
+\textbf{Conta de demonstra\c{c}\~ao:} \texttt{teste@gmail.com}
+
+\textbf{Palavra-passe:} \texttt{123}
+
+Caso seja necess\'ario aceder \`a conta de administra\c{c}\~ao do Keycloak, as respetivas credenciais dever\~ao ser solicitadas posteriormente.
+
+\section{Guia de valida\c{c}\~ao sugerido ao arguente}
+
+Para facilitar a an\'alise do trabalho realizado, sugere-se o seguinte percurso de valida\c{c}\~ao, preferencialmente atrav\'es do ambiente publicado em Fly.io:
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item autenticar no sistema com a conta de demonstra\c{c}\~ao;
+    \item criar ou editar uma lista de compras;
+    \item consultar produtos, categorias e pre\c{c}os;
+    \item validar a integra\c{c}\~ao entre frontend, backend e autentica\c{c}\~ao;
+    \item observar a organiza\c{c}\~ao dos microservi\c{c}os e da componente de scraping;
+    \item confirmar a exist\^encia da configura\c{c}\~ao de deploy e da documenta\c{c}\~ao t\'ecnica.
+\end{enumerate}
+
+\section{Observa\c{c}\~oes complementares}
+
+Este guia tem como finalidade apoiar a an\'alise do projeto ShopISEL, fornecendo ao arguente os elementos essenciais para a valida\c{c}\~ao funcional da solu\c{c}\~ao, para a consulta da organiza\c{c}\~ao dos reposit\'orios e para a compreens\~ao da estrutura t\'ecnica do sistema.
+
+\end{document}
