@@ -1,0 +1,165 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{parskip}
+\usepackage{helvet}
+
+\renewcommand{\familydefault}{\sfdefault}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+
+\title{\textbf{Guia do Arguente}\\[4pt]\large ShopISEL}
+\author{
+    Martim Monteiro (51619) \and
+    Alexandre Tavares (51271) \and
+    Pedro Gomes (51423)
+}
+\date{Julho de 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\section{Identifica\c{c}\~ao do projeto}
+
+\textbf{T\'itulo do projeto:} ShopISEL -- Aplica\c{c}\~ao de Lista de Compras com Pre\c{c}os e Alertas
+
+\textbf{Orientador:} Doutor Fernando Miguel Gamboa de Carvalho
+
+\textbf{Objetivo deste documento:} fornecer ao arguente uma descri\c{c}\~ao resumida da organiza\c{c}\~ao do projeto, da estrutura do reposit\'orio, dos passos necess\'arios para executar a solu\c{c}\~ao e dos acessos indispens\'aveis para a valida\c{c}\~ao da demonstra\c{c}\~ao.
+
+\section{Descri\c{c}\~ao da organiza\c{c}\~ao do dossier}
+
+O projeto encontra-se organizado por componentes funcionais, separando aplica\c{c}\~oes cliente, servi\c{c}os backend, scrapers, infraestrutura e relat\'orio. Esta organiza\c{c}\~ao facilita a navega\c{c}\~ao no c\'odigo e a avalia\c{c}\~ao independente de cada parte da solu\c{c}\~ao.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}p{9.8cm}}
+\textbf{Pasta} & \textbf{Conte\'udo principal} \\
+\hline
+\texttt{frontend/} & Aplica\c{c}\~ao web em React + Vite. \\
+\texttt{frontend-mobile/} & Aplica\c{c}\~ao m\'ovel em Expo React Native. \\
+\texttt{account-service/} & Microservi\c{c}o de contas e perfil autenticado. \\
+\texttt{list-service/} & Microservi\c{c}o de listas de compras. \\
+\texttt{products-service/} & Microservi\c{c}o de produtos e categorias. \\
+\texttt{prices-service/} & Microservi\c{c}o de pre\c{c}os. \\
+\texttt{stores-service/} & Microservi\c{c}o de lojas e localiza\c{c}\~oes. \\
+\texttt{matchqueue-service/} & Servi\c{c}o de suporte a integra\c{c}\~oes ass\'incronas e notifica\c{c}\~oes. \\
+\texttt{scraper-continente/} & Scraper de produtos e pre\c{c}os Continente. \\
+\texttt{scraper-pingodoce/} & Scraper de produtos e pre\c{c}os Pingo Doce. \\
+\texttt{all-stores-scraper/} & Recolha e exporta\c{c}\~ao de dados de lojas. \\
+\texttt{scraper-orchestrator/} & Orquestra\c{c}\~ao da execu\c{c}\~ao dos scrapers. \\
+\texttt{keycloack/} & Configura\c{c}\~ao de autentica\c{c}\~ao com Keycloak. \\
+\texttt{deploy/} & Configura\c{c}\~ao de gateway e deploy em Fly.io/Render. \\
+\texttt{report/} & Relat\'orio principal do projeto. \\
+\end{longtable}
+
+\section{Reposit\'orio e acesso ao c\'odigo}
+
+O arguente deve receber acesso de leitura ao reposit\'orio antes da prova. Neste documento recomenda-se inserir o URL final do reposit\'orio e confirmar que as permiss\~oes foram concedidas.
+
+\textbf{URL do reposit\'orio:} \texttt{[preencher com o URL oficial do projeto]}
+
+\textbf{Observa\c{c}\~ao:} caso o projeto esteja dividido por v\'arios reposit\'orios, deve ser inclu\'ida uma lista com os URLs de cada componente e uma breve nota a explicar a rela\c{c}\~ao entre eles.
+
+\section{Tecnologias principais}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item Frontend web em React com Vite;
+    \item Frontend mobile em Expo React Native;
+    \item Backend em .NET, organizado em microservi\c{c}os;
+    \item Autentica\c{c}\~ao centralizada com Keycloak;
+    \item Notifica\c{c}\~oes push com Firebase Cloud Messaging;
+    \item Deploy e encaminhamento via Fly.io e Render;
+    \item Recolha autom\'atica de dados com scrapers dedicados por ins\'ignia.
+\end{itemize}
+
+\section{Informa\c{c}\~ao para instala\c{c}\~ao e execu\c{c}\~ao}
+
+\subsection{Frontend web}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item Entrar na pasta \texttt{frontend/};
+    \item Instalar depend\^encias com \texttt{npm install};
+    \item Executar em desenvolvimento com \texttt{npm run dev};
+    \item Configurar o ficheiro de ambiente com base em \texttt{frontend/.env.example}.
+\end{itemize}
+
+\subsection{Frontend mobile}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item Entrar na pasta \texttt{frontend-mobile/};
+    \item Instalar depend\^encias com \texttt{npm install};
+    \item Iniciar com \texttt{npx expo start --go};
+    \item Usar Expo Go ou emulador/dispositivo compat\'ivel para testes.
+\end{itemize}
+
+\subsection{Servi\c{c}os backend}
+
+Cada microservi\c{c}o backend pode ser executado individualmente. O procedimento base \'e o seguinte:
+
+\begin{itemize}[leftmargin=1.8em]
+    \item entrar na pasta do servi\c{c}o pretendido;
+    \item executar \texttt{dotnet restore src};
+    \item executar \texttt{dotnet test src}, quando existirem testes;
+    \item executar \texttt{dotnet run --project src/<NomeDoProjeto>}.
+\end{itemize}
+
+Os servi\c{c}os autenticados requerem, pelo menos, configura\c{c}\~oes de \texttt{ConnectionStrings} e de integra\c{c}\~ao com Keycloak, nomeadamente valores para \texttt{Authority}, \texttt{Audience} e outras chaves equivalentes definidas nos respetivos \texttt{README}s e \texttt{appsettings}.
+
+\subsection{Infraestrutura e autentica\c{c}\~ao}
+
+\begin{itemize}[leftmargin=1.8em]
+    \item O gateway e os upstreams encontram-se documentados em \texttt{deploy/fly.toml} e \texttt{deploy/render.yaml};
+    \item O Keycloak encontra-se configurado na pasta \texttt{keycloack/};
+    \item Para o Keycloak, devem ser definidos os segredos de administra\c{c}\~ao e de acesso \`a base de dados indicados em \texttt{keycloack/README.md};
+    \item O sistema depende de PostgreSQL e, para algumas funcionalidades, de Firebase Cloud Messaging.
+\end{itemize}
+
+\section{Credenciais de acesso}
+
+Se a demonstra\c{c}\~ao exigir login, o arguente deve receber credenciais de teste previamente validadas pelo grupo.
+
+\textbf{Conta de demonstra\c{c}\~ao:} \texttt{[preencher]}
+
+\textbf{Palavra-passe:} \texttt{[preencher]}
+
+\textbf{Conta de administra\c{c}\~ao do Keycloak, se necess\'aria:} \texttt{[preencher]}
+
+\textbf{Nota:} recomenda-se a cria\c{c}\~ao de uma conta dedicada \`a prova, com dados est\'aveis e sem depend\^encia de credenciais pessoais dos elementos do grupo.
+
+\section{Guia de valida\c{c}\~ao sugerido ao arguente}
+
+Para facilitar a an\'alise do trabalho realizado, sugere-se o seguinte percurso de valida\c{c}\~ao:
+
+\begin{enumerate}[leftmargin=1.8em]
+    \item autenticar no sistema com a conta de demonstra\c{c}\~ao;
+    \item criar ou editar uma lista de compras;
+    \item consultar produtos, categorias e pre\c{c}os;
+    \item validar a integra\c{c}\~ao entre frontend, backend e autentica\c{c}\~ao;
+    \item observar a organiza\c{c}\~ao dos microservi\c{c}os e da componente de scraping;
+    \item confirmar a exist\^encia da configura\c{c}\~ao de deploy e da documenta\c{c}\~ao t\'ecnica.
+\end{enumerate}
+
+\section{Notas finais}
+
+Antes da entrega final, este mini relat\'orio deve ser completado com:
+
+\begin{itemize}[leftmargin=1.8em]
+    \item o URL real do reposit\'orio;
+    \item as credenciais definitivas de demonstra\c{c}\~ao;
+    \item eventuais portas, URLs de deploy ou passos adicionais espec\'ificos do ambiente da apresenta\c{c}\~ao;
+    \item qualquer informa\c{c}\~ao extra necess\'aria para reproduzir funcionalidades dependentes de servi\c{c}os externos.
+\end{itemize}
+
+\end{document}
