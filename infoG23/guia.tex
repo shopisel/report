@@ -147,6 +147,13 @@ Apesar de os servi\c{c}os estarem dispon\'iveis em Fly.io para demonstra\c{c}\~a
 
 Os servi\c{c}os autenticados requerem, pelo menos, configura\c{c}\~oes de \texttt{ConnectionStrings} e de integra\c{c}\~ao com Keycloak, nomeadamente valores para \texttt{Authority}, \texttt{Audience} e outras chaves equivalentes definidas nos respetivos \texttt{README}s e \texttt{appsettings}.
 
+\texttt{ConnectionString}: \path|Host=ep-sparkling-tooth-abqgborn.eu-west-2.aws.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=npg_gJG0P9QjufFY;SSL Mode=Require;Trust Server Certificate=true|
+
+A connection string de acesso \`a base de dados deve ser colocada no ficheiro\\
+\texttt{appsettings.Development.json} de cada servi\c{c}o, na sec\c{c}\~ao
+\texttt{ConnectionStrings}. Por exemplo, no caso do \texttt{list-service},
+deve ser usada a chave \texttt{ConnectionStrings:ListService}.
+
 \subsection{Infraestrutura e autentica\c{c}\~ao}
 
 \begin{itemize}[leftmargin=1.8em]
