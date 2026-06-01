@@ -26,7 +26,8 @@ Os repositórios principais do projeto são:
     \item \texttt{frontend} — aplicação web React;
     \item \texttt{frontend-mobile} — aplicação móvel React Native / Expo;
     \item \texttt{deploy} — configuração de infraestrutura e gateway Nginx;
-    \item \texttt{keycloak} — configuração do servidor Keycloak.
+    \item \texttt{keycloak} — configuração do servidor Keycloak;
+    \item \texttt{custom-label} — configuração de build e publicação white label da aplicação móvel.
 \end{itemize}
 
 \section{Controlo de Versões e Estratégia de Branches}
@@ -123,3 +124,5 @@ O conceito de White Label aplicado ao ShopISEL refere-se à capacidade de dispon
 A arquitetura multi-repositório e a parametrização das aplicações por variáveis de ambiente criam as condições técnicas para este modelo de distribuição. A aplicação móvel pode ser compilada com diferentes identificadores de aplicação (\textit{bundle ID}), temas visuais, logótipos e apontadores de backend, bastando configurar as variáveis de ambiente e os segredos adequados no repositório de cada variante.
 
 As pipelines de \ac{CI/CD} são o mecanismo central desta abordagem: ao parametrizar o workflow de build com os segredos e configurações específicos de cada parceiro, é possível produzir e publicar uma variante distinta da aplicação sem alterar o código-fonte. A adição de um novo parceiro requer apenas a criação de um conjunto de segredos dedicado e de um workflow que os injete no processo de build existente, reutilizando toda a infraestrutura de testes, construção e deployment já implementada.
+
+O repositório \texttt{custom-label} concretiza esta abordagem, contendo os workflows de GitHub Actions, os ficheiros de configuração Expo e os segredos de build necessários para produzir e publicar uma variante white label da aplicação móvel, com identificador de aplicação, tema visual e apontadores de backend próprios, sem qualquer alteração ao código-fonte partilhado.
