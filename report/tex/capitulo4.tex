@@ -14,101 +14,115 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{
 \begin{tikzpicture}[
+    node distance=1.2cm and 1.7cm,
     service/.style={rectangle, draw=black, rounded corners=4pt, fill=white,
-                    minimum width=2.4cm, minimum height=0.9cm, font=\small, align=center},
+                    minimum width=2.35cm, minimum height=0.9cm, font=\small, align=center},
     client/.style={rectangle, draw=black!70, rounded corners=4pt, fill=blue!12,
                    minimum width=2.8cm, minimum height=0.9cm, font=\small, align=center},
     db/.style={cylinder, draw=black!70, fill=gray!15, shape border rotate=90,
-               minimum width=2.0cm, minimum height=0.7cm, font=\scriptsize, align=center},
+               minimum width=2.0cm, minimum height=0.8cm, font=\scriptsize, align=center},
     ext/.style={rectangle, draw=black!70, rounded corners=4pt, fill=orange!15,
-                minimum width=2.6cm, minimum height=0.9cm, font=\small, align=center},
+                minimum width=2.5cm, minimum height=0.9cm, font=\small, align=center},
     gw/.style={rectangle, draw=black, rounded corners=4pt, fill=yellow!20,
-               minimum width=3.4cm, minimum height=0.9cm, font=\small\bfseries, align=center},
+               minimum width=3.2cm, minimum height=0.9cm, font=\small\bfseries, align=center},
     arr/.style={-{Stealth[length=6pt]}, thick},
     darr/.style={<->, thick, dashed}
 ]
 
-%--- Linha 1: Clientes ---
-\node[client] (web)    at (1.0, 0)    {Web App\\(React + Vite)};
-\node[client] (mobile) at (5.0, 0)    {Mobile App\\(React Native)};
+% Top row
+\node[client] (web) {Web App\\(React + Vite)};
+\node[client, right=2.0cm of web] (mobile) {Mobile App\\(React Native)};
+\node[ext, left=1.8cm of web, yshift=-0.65cm] (kc) {Keycloak\\(Auth)};
 
-%--- Linha 2: Gateway + externos ---
-\node[gw]  (nginx) at (3.0, -2.0)   {Nginx Gateway};
-\node[ext] (kc)    at (11.5, -2.0)  {Keycloak\\(Auth)};
-\node[ext] (fcm)   at (11.5, -3.8)  {Firebase\\FCM};
+% Gateway
+\node[gw, below=1.3cm of $(web)!0.5!(mobile)$] (nginx) {Nginx Gateway};
 
-%--- Linha 3: Serviços (espaçamento de 3 cm entre centros) ---
-\node[service] (account)  at (-3.0, -4.2) {Account\\Service};
-\node[service] (list)     at ( 0.0, -4.2) {List\\Service};
-\node[service] (products) at ( 3.0, -4.2) {Products\\Service};
-\node[service] (prices)   at ( 6.0, -4.2) {Prices\\Service};
-\node[service] (stores)   at ( 9.0, -4.2) {Stores\\Service};
+% Backend services row
+\node[service, below left=1.4cm and 2.3cm of nginx] (account) {Account\\Service};
+\node[service, right=1.1cm of account] (list) {List\\Service};
+\node[service, right=1.1cm of list] (products) {Products\\Service};
+\node[service, right=1.1cm of products] (prices) {Prices\\Service};
+\node[service, right=1.1cm of prices] (stores) {Stores\\Service};
 
-%--- Linha 4: Bases de dados ---
-\node[db] (db-acc)  at (-3.0, -6.0) {PostgreSQL};
-\node[db] (db-list) at ( 0.0, -6.0) {PostgreSQL};
-\node[db] (db-prod) at ( 3.0, -6.0) {PostgreSQL};
-\node[db] (db-pr)   at ( 6.0, -6.0) {PostgreSQL};
-\node[db] (db-st)   at ( 9.0, -6.0) {PostgreSQL};
+% Databases row
+\node[db, below=of account] (db-acc) {PostgreSQL};
+\node[db, below=of list] (db-list) {PostgreSQL};
+\node[db, below=of products] (db-prod) {PostgreSQL};
+\node[db, below=of prices] (db-pr) {PostgreSQL};
+\node[db, below=of stores] (db-st) {PostgreSQL};
 
-%--- Linha 5: MatchQueue ---
-\node[db]      (mongo)  at ( 0.5, -8.0) {MongoDB};
-\node[service] (mq)     at ( 3.5, -8.0) {MatchQueue\\Service};
-\node[db]      (db-mq)  at ( 7.0, -8.0) {PostgreSQL};
-
-%--- Linha 6: Scrapers + FCM Worker ---
-\node[service] (sc-cont) at (-0.5, -10.0) {Scraper\\Continente};
-\node[service] (sc-pd)   at ( 2.5, -10.0) {Scraper\\Pingo Doce};
-\node[service] (fcmw)    at ( 7.0, -10.0) {FCM\\Worker};
-
-%--- Clientes → Gateway ---
-\draw[arr] (web.south)    -- (nginx.north west);
+% Client flow
+\draw[darr] (kc.south east) -- (nginx.north west);
+\draw[arr] (web.south) -- (nginx.north);
 \draw[arr] (mobile.south) -- (nginx.north east);
 
-%--- Gateway → Serviços (barra de distribuição horizontal) ---
-\coordinate (bus) at (3.0, -3.0);
-\draw (nginx.south) -- (bus);
-\draw (bus -| account.north) -- (bus -| stores.north);
-\draw[arr] (bus -| account.north)  -- (account.north);
-\draw[arr] (bus -| list.north)     -- (list.north);
-\draw[arr] (bus -| products.north) -- (products.north);
-\draw[arr] (bus -| prices.north)   -- (prices.north);
-\draw[arr] (bus -| stores.north)   -- (stores.north);
+% Gateway to backend services
+\draw[arr] (nginx.south) -- ++(0,-0.45) -| (account.north);
+\draw[arr] (nginx.south) -- ++(0,-0.45) -| (list.north);
+\draw[arr] (nginx.south) -- ++(0,-0.45) -| (products.north);
+\draw[arr] (nginx.south) -- ++(0,-0.45) -| (prices.north);
+\draw[arr] (nginx.south) -- ++(0,-0.45) -| (stores.north);
 
-%--- Serviços → DBs ---
-\draw[arr] (account.south)  -- (db-acc.north);
-\draw[arr] (list.south)     -- (db-list.north);
+% Backend services to their databases and auth
+\draw[arr] (account.south) -- (db-acc.north);
+\draw[arr] (list.south) -- (db-list.north);
 \draw[arr] (products.south) -- (db-prod.north);
-\draw[arr] (prices.south)   -- (db-pr.north);
-\draw[arr] (stores.south)   -- (db-st.north);
-
-%--- Auth ---
-\draw[darr] (nginx.east) -- (kc.west);
-\draw[darr] (list.east)  -| (kc.south);
-
-%--- Scrapers → MongoDB ---
-\draw[arr] (sc-cont.north) -- (mongo.south);
-\draw[arr] (sc-pd.north)   -- (mongo.south);
-
-%--- MatchQueue ---
-\draw[arr] (mongo.east) -- (mq.west);
-\draw[arr] (mq.east)    -- (db-mq.west);
-
-%--- FCM Worker ---
-\draw[arr] (db-mq.south) -- (fcmw.north);
-\draw[arr] (fcmw.east)   -| (fcm.south);
+\draw[arr] (prices.south) -- (db-pr.north);
+\draw[arr] (stores.south) -- (db-st.north);
+\draw[darr] (account.west) -- (kc.south east);
+\draw[darr] (list.west) -- ++(-0.5,0) |- (kc.south);
 
 \end{tikzpicture}
-}
 \caption{Visão geral da arquitetura do sistema ShopISEL}
 \label{fig:arquitetura}
 \end{figure}
 
 Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend comunicam com as suas respetivas bases de dados PostgreSQL e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
 
-A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue Service processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging.
+A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue Service processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    scale=0.9,
+    transform shape,
+    node distance=1.0cm and 1.15cm,
+    service/.style={rectangle, draw=black, rounded corners=4pt, fill=white,
+                    minimum width=2.3cm, minimum height=0.8cm, font=\small, align=center},
+    db/.style={cylinder, draw=black!70, fill=gray!15, shape border rotate=90,
+               minimum width=1.8cm, minimum height=0.75cm, font=\scriptsize, align=center},
+    ext/.style={rectangle, draw=black!70, rounded corners=4pt, fill=orange!15,
+                minimum width=2.2cm, minimum height=0.8cm, font=\small, align=center},
+    arr/.style={-{Stealth[length=5pt]}, thick},
+    ctrl/.style={<->, thick, dashed}
+]
+
+\node[service] (sc-cont) {Scraper\\Continente};
+\node[service, right=of sc-cont] (orch) {Orchestrator};
+\node[service, right=of orch] (sc-pd) {Scraper\\Pingo Doce};
+
+\node[db, below=1.0cm of orch] (mongo) {MongoDB};
+\node[service, right=1.35cm of mongo] (mq) {MatchQueue\\Service};
+\node[service, right=of mq] (fcmw) {FCM\\Worker};
+\node[ext, right=1.35cm of fcmw] (fcm) {Firebase\\FCM};
+\node[db, below=1.0cm of $(mq)!0.5!(fcmw)$] (pg) {PostgreSQL};
+
+\draw[ctrl] (sc-cont.east) -- (orch.west);
+\draw[ctrl] (orch.east) -- (sc-pd.west);
+\draw[arr] (sc-cont.south) -- ++(0,-0.12) -| (mongo.north west);
+\draw[arr] (sc-pd.south) -- ++(0,-0.12) -| (mongo.north east);
+\draw[arr] (orch.south) -- (mq.north);
+\draw[arr] (mongo.east) -- (mq.west);
+\draw[arr] (mq.south) -- (pg.north);
+\draw[arr] (fcmw.south) -- (pg.north east);
+\draw[arr] (mq.east) -- (fcmw.west);
+\draw[arr] (fcmw.east) -- (fcm.west);
+
+\end{tikzpicture}
+\caption{Pipeline de recolha de dados e entrega de notificações}
+\label{fig:pipeline}
+\end{figure}
 
 \subsection{Modelo de Dados}
 \label{sec:4.1.1}
@@ -243,12 +257,10 @@ O serviço expõe dois endpoints protegidos:
     \item \texttt{PUT /accounts/me} — atualiza as preferências do perfil.
 \end{itemize}
 
-Este serviço é implantado no Fly.io, enquanto os restantes serviços são implantados no Render.com, demonstrando a flexibilidade da arquitetura em termos de plataformas de hosting.
-
 \subsection{MatchQueue Service}
 \label{sec:4.2.6}
 
-O MatchQueue Service é um componente híbrido que funciona em dois modos de execução: modo API (expõe um endpoint \texttt{POST /matchqueue/trigger} que pode ser invocado pelos scrapers após a recolha de dados) e modo worker (processa os dados de staging do MongoDB, normaliza-os e integra-os na base de dados relacional).
+O MatchQueue Service é um componente worker que é executado após a conclusão dos scrapers, recebendo os dados de staging do MongoDB, normalizando-os e integrando-os na base de dados relacional.
 
 Este serviço é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
 
@@ -257,54 +269,12 @@ Este serviço é responsável pela ponte entre os dados brutos recolhidos pelos 
     \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
 \end{itemize}
 
-O modo worker é ativado através do argumento \texttt{--mode worker} na linha de comandos, sendo orquestrado por um GitHub Actions workflow que o dispara após a conclusão dos scrapers.
+O serviço é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações sem expor um modo \texttt{API} dedicado.
 
 \section{Pipeline de Recolha de Dados}
 \label{sec:4.3}
 
-A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. A Figura~\ref{fig:pipeline} ilustra o fluxo de dados desde os scrapers até às notificações.
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[
-    node distance=0.9cm and 1.8cm,
-    box/.style={rectangle, draw, rounded corners=3pt, fill=white, minimum width=2.8cm,
-                minimum height=0.8cm, font=\small, align=center},
-    db/.style={cylinder, draw, fill=gray!15, shape border rotate=90,
-               minimum width=2.0cm, minimum height=0.6cm, font=\scriptsize, align=center},
-    arr/.style={-{Stealth[length=5pt]}, thick},
-    lbl/.style={font=\scriptsize, midway, above}
-]
-
-\node[box] (c)   {Scraper\\Continente};
-\node[box, right=1.5cm of c] (pd)  {Scraper\\Pingo Doce};
-\node[box, right=1.5cm of pd] (orch) {Orchestrator\\(GitHub Actions)};
-
-\node[db, below=0.9cm of pd] (mongo) {MongoDB\\(staging)};
-
-\node[box, below=0.9cm of mongo] (mq) {MatchQueue\\Service};
-
-\node[db, below=0.9cm of mq] (pg) {PostgreSQL\\(normalizado)};
-
-\node[box, below=0.9cm of pg] (fcmw) {FCM\\Worker};
-
-\node[box, right=1.8cm of fcmw] (fcm) {Firebase\\FCM};
-
-\node[box, right=1.8cm of fcm] (device) {Dispositivo\\do utilizador};
-
-\draw[arr] (c.south)    -- node[lbl]{JSON} (mongo.north west);
-\draw[arr] (pd.south)   -- node[lbl]{JSON} (mongo.north);
-\draw[arr] (orch.south) -- (mq.north east);
-\draw[arr] (mongo.south) -- node[lbl]{dados brutos} (mq.north);
-\draw[arr] (mq.south)   -- node[lbl]{normalização} (pg.north);
-\draw[arr] (pg.south)   -- node[lbl]{pendentes} (fcmw.north);
-\draw[arr] (fcmw.east)  -- (fcm.west);
-\draw[arr] (fcm.east)   -- (device.west);
-
-\end{tikzpicture}
-\caption{Pipeline de recolha de dados e entrega de notificações}
-\label{fig:pipeline}
-\end{figure}
+A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. Como se pode ver na Figura~\ref{fig:pipeline}, o fluxo começa nos scrapers e termina na entrega de notificações.
 
 \subsection{Scraper Continente}
 \label{sec:4.3.1}
@@ -363,6 +333,17 @@ O FCM Notification Worker é uma aplicação .NET de execução pontual (run-to-
 \end{enumerate}
 
 As notificações enviadas informam o utilizador de que o preço de um produto favorito desceu, incluindo nos dados da mensagem o identificador do produto e da notificação, permitindo à aplicação móvel navegar diretamente para o produto relevante.
+
+\begin{figure}[H]
+\centering
+\fbox{%
+\parbox{0.92\textwidth}{%
+\centering
+Inserir aqui a imagem do fluxo de autenticação com Keycloak.
+}}
+\caption{Fluxo de autenticação com Keycloak}
+\label{fig:keycloak-flow}
+\end{figure}
 
 \section{Aplicação Web}
 \label{sec:4.5}
@@ -441,6 +422,6 @@ O acesso às APIs dos serviços de backend é feito através de um gateway Nginx
 
 Esta arquitetura de gateway simplifica a configuração das aplicações cliente, que comunicam com um único endpoint base, e permite adicionar funcionalidades transversais como rate limiting, logging centralizado ou cache HTTP sem modificar os serviços individuais.
 
-Todo o sistema é containerizado com Docker. Cada serviço dispõe de um Dockerfile que produz uma imagem mínima e otimizada para produção. Os serviços são implantados no Render.com, com o Account Service a ser implantado no Fly.io, tirando partido das garantias de disponibilidade e escalabilidade destas plataformas.
+Todo o sistema é containerizado com Docker. Cada serviço dispõe de um Dockerfile que produz uma imagem mínima e otimizada para produção. Os serviços são implantados no Fly.io, tirando partido das garantias de disponibilidade e escalabilidade desta plataforma.
 
-A configuração de deployment está declarada no ficheiro \texttt{render.yaml}, que especifica os serviços, as imagens Docker correspondentes e as variáveis de ambiente necessárias. As imagens são publicadas automaticamente no GitHub Container Registry pelos pipelines de \ac{CI/CD}, e o Render.com deteta novas versões e realiza o deploy de forma automática.
+A configuração de deployment está declarada nos ficheiros de infraestrutura e nos pipelines de \ac{CI/CD}, que publicam as imagens no GitHub Container Registry e automatizam o processo de entrega.

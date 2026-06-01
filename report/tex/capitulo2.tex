@@ -46,11 +46,11 @@ mais utilizadas em aplicações modernas, sendo mantida com documentação ofici
 suporte para versões atuais~\cite{postgresql-docs}.
 
 No ShopISEL, os serviços de backend recorrem a Entity Framework Core com o provider
-Npgsql para PostgreSQL. Esta combinação permite modelar entidades em C\#, aplicar
-migrações e interagir com a base de dados através de uma camada de acesso a dados
-integrada no ecossistema .NET~\cite{npgsql-efcore}. A utilização de migrações é
-particularmente importante porque o sistema evolui por serviços: cada domínio pode
-alterar o seu esquema de dados sem exigir uma reorganização global da aplicação.
+Npgsql para PostgreSQL. Esta combinação permite modelar entidades em C\# (C Sharp),
+aplicar migrações e interagir com a base de dados através de uma camada de acesso a
+dados integrada no ecossistema .NET~\cite{npgsql-efcore}. A utilização de migrações é 
+particularmente importante porque o sistema evolui por serviços: cada domínio pode alterar 
+o seu esquema de dados sem exigir uma reorganização global da aplicação.
 
 Esta opção também facilita o suporte a cenários relevantes para o projeto, como a
 associação de itens a listas de compras, a categorização de produtos, o registo de
@@ -117,9 +117,13 @@ Quando não existe uma \ac{API} pública uniforme para todas as lojas, a recolha
 automática por scraping torna-se uma alternativa prática, embora exija cuidados com
 estrutura das páginas, normalização de dados e robustez perante alterações externas.
 
-O projeto inclui scrapers específicos para Continente e Pingo Doce. Estes componentes
-recolhem produtos por categoria, extraem informação como nome, preço, promoção,
-imagem e disponibilidade, e podem sincronizar os resultados com PostgreSQL através da
+O projeto inclui scrapers específicos para Continente e Pingo Doce. Embora sejam
+componentes independentes, no sentido em que cada loja online tem a sua própria
+estrutura de DOM, navegação e regras de extração, ambos perseguem o mesmo
+objetivo funcional: recolher automaticamente produtos por categoria e extrair
+informação como nome, preço, promoção, imagem e disponibilidade. Esta separação
+permite adaptar a lógica de scraping às particularidades de cada insígnia sem afetar
+as restantes. Os resultados podem ser sincronizados com PostgreSQL através da
 variável de ambiente \texttt{PRODUCTS\_DB\_CONNECTION}. No caso do Pingo Doce, a
 utilização de Playwright é adequada a páginas dinâmicas, uma vez que esta ferramenta
 permite automatizar browsers e interagir com conteúdo renderizado no cliente. A
