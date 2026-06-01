@@ -336,11 +336,41 @@ As notificações enviadas informam o utilizador de que o preço de um produto f
 
 \begin{figure}[H]
 \centering
-\fbox{%
-\parbox{0.92\textwidth}{%
-\centering
-Inserir aqui a imagem do fluxo de autenticação com Keycloak.
-}}
+\begin{tikzpicture}[
+    font=\scriptsize,
+    line/.style={draw=black, thick},
+    dashedline/.style={draw=black, thick, dashed},
+    box/.style={rectangle, draw=black!70, rounded corners=2pt, minimum width=2.9cm, minimum height=0.9cm, align=center},
+    arrow/.style={-{Stealth[length=6pt]}, thick}
+]
+
+\node[box] (userTop) at (0,4.1) {Utilizador\\(Browser)};
+\node[box] (appTop) at (4.2,4.1) {App (Client)};
+\node[box] (kcTop) at (8.6,4.1) {Keycloak};
+\node[box] (apiTop) at (13.0,4.1) {Backend/API};
+
+\node[box] (userBot) at (0,-4.0) {Utilizador\\(Browser)};
+\node[box] (appBot) at (4.2,-4.0) {App (Client)};
+\node[box] (kcBot) at (8.6,-4.0) {Keycloak};
+\node[box] (apiBot) at (13.0,-4.0) {Backend/API};
+
+\draw[line] (0,3.6) -- (0,-3.6);
+\draw[line] (4.2,3.6) -- (4.2,-3.6);
+\draw[line] (8.6,3.6) -- (8.6,-3.6);
+\draw[line] (13.0,3.6) -- (13.0,-3.6);
+
+\draw[arrow] (0,3.1) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt] {Abre app} (4.2,3.1);
+\draw[arrow] (4.2,2.35) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt, align=center] {Redirect para\\\texttt{/authorize}} (8.6,2.35);
+\draw[arrow] (8.6,1.6) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt] {Mostra login / MFA} (0,1.6);
+\draw[arrow] (0,0.85) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt] {Credenciais} (8.6,0.85);
+\draw[dashedline] (8.6,0.1) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt, align=center] {Redirect com\\authorization code} (4.2,0.1);
+\draw[arrow] (4.2,-0.65) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt] {Troca code por tokens} (8.6,-0.65);
+\draw[dashedline] (8.6,-1.4) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt, align=center] {Access / ID /\\Refresh token} (4.2,-1.4);
+\draw[arrow] (4.2,-2.15) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt, align=center] {Chama API com\\Access Token (Bearer)} (13.0,-2.15);
+\draw[arrow] (13.0,-2.9) -- node[midway, above, font=\scriptsize, fill=white, inner sep=1pt, align=center] {Valida token\\(JWKS/introspection)} (8.6,-2.9);
+\draw[dashedline] (8.6,-3.3) -- node[midway, below, font=\scriptsize, fill=white, inner sep=1pt] {Resposta} (4.2,-3.3);
+
+\end{tikzpicture}
 \caption{Fluxo de autenticação com Keycloak}
 \label{fig:keycloak-flow}
 \end{figure}
