@@ -19,7 +19,7 @@ Os serviços com cobertura de testes de integração são:
     \item \textbf{Prices Service} (\texttt{PricesService.Tests}).
 \end{itemize}
 
-Os serviços \textbf{Stores Service} e \textbf{Account Service} não possuem testes automatizados dedicados. No caso do Stores Service, os endpoints são essencialmente de leitura sobre dados estáticos de lojas, sem lógica de negócio complexa que justifique a criação de testes de integração autónomos. O Account Service, por sua vez, atua maioritariamente como proxy de dados do token JWT, com lógica de atualização de preferências de perfil simples e sem invariantes de negócio a validar. Ambos os serviços são, no entanto, exercitados indiretamente durante a validação funcional descrita na Secção~\ref{sec:6.5}.
+O \textbf{Account Service} possui testes de integração dedicados, cobrindo sincronização de conta, favoritos e registo de tokens de push. O \textbf{Stores Service} tem um projeto de testes criado, mas o seu conjunto de casos é mais reduzido do que o dos restantes serviços centrais. Na prática, isso significa que a cobertura automatizada está mais madura nos domínios onde existe mais lógica de negócio, enquanto os serviços mais simples são validados sobretudo de forma funcional. Ambos são também exercitados indiretamente durante a validação funcional descrita na Secção~\ref{sec:6.5}.
 
 A análise estática de código realizada pelo SonarCloud nas pipelines de \ac{CI/CD} complementa os testes automatizados, reportando métricas de qualidade, vulnerabilidades e cobertura de código para os serviços que possuem projetos de teste.
 
@@ -103,9 +103,9 @@ A validação funcional incluiu os seguintes cenários:
 \begin{itemize}
     \item \textbf{Registo e autenticação}: criação de conta no Keycloak, login a partir da aplicação web e da aplicação móvel, renovação de token e logout;
     \item \textbf{Gestão de listas}: criação, edição e eliminação de listas de compras na aplicação web e na aplicação móvel, com verificação da sincronização entre dispositivos;
-    \item \textbf{Pesquisa de produtos}: pesquisa por nome e por categoria, consulta de preços por loja;
-    \item \textbf{Leitura de código de barras}: identificação de produtos através da câmara na aplicação móvel;
-    \item \textbf{Georreferenciação}: apresentação de lojas próximas com base na localização do dispositivo;
+    \item \textbf{Pesquisa de produtos}: pesquisa por nome e por categoria, consulta de preços por loja e identificação por código de barras;
+    \item \textbf{Leitura de código de barras}: captura pela câmara na aplicação móvel, consulta ao backend e sugestão de produto ou alternativas relacionadas;
+    \item \textbf{Georreferenciação}: pedido de localização no dispositivo e ordenação dos resultados por proximidade;
     \item \textbf{Notificações push}: registo do token FCM no arranque da aplicação móvel e receção de alertas de descida de preço;
     \item \textbf{Pipeline de scraping}: execução dos scrapers, verificação dos dados no MongoDB, processamento pelo MatchQueue Service e consulta dos preços atualizados na aplicação.
 \end{itemize}

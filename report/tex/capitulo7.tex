@@ -8,11 +8,11 @@ Este capítulo apresenta uma síntese do trabalho desenvolvido no âmbito do pro
 \section{Síntese do Trabalho Desenvolvido}
 \label{sec:7.1}
 
-O ShopISEL partiu de uma necessidade concreta dos consumidores: o planeamento eficiente de compras num contexto de múltiplas insígnias, preços variáveis e informação dispersa. A resposta desenvolvida é uma plataforma digital integrada, composta por uma aplicação móvel, uma aplicação web e uma infraestrutura de backend baseada em microserviços.
+O ShopISEL partiu de uma necessidade concreta dos consumidores: organizar compras num contexto de múltiplas insígnias, preços variáveis e informação dispersa. A solução desenvolvida reúne uma aplicação móvel, uma aplicação web e uma infraestrutura backend baseada em microserviços.
 
-O sistema oferece ao utilizador a possibilidade de criar e gerir listas de compras, comparar preços do mesmo produto entre diferentes lojas e localizações, receber alertas quando o preço de um produto favorito desce e identificar produtos através da leitura de códigos de barras. A georreferenciação das lojas permite apresentar opções ordenadas por proximidade geográfica, tornando a informação contextualmente relevante.
+Em termos funcionais, a plataforma já cobre os fluxos principais do projeto: gestão de listas, consulta de preços, alertas de descida de preço, leitura de códigos de barras e apresentação de preços com base na localização do utilizador quando aplicável. Estes elementos mostram que o sistema não ficou apenas pela ideia inicial, mas evoluiu para um conjunto de funcionalidades utilizáveis em contexto real.
 
-Do ponto de vista técnico, o projeto demonstra como uma aplicação aparentemente simples — uma lista de compras — pode evoluir para um ecossistema digital completo, com desafios técnicos significativos ao nível da recolha e normalização de dados heterogéneos, da integração de múltiplos serviços, da autenticação centralizada e da entrega de notificações em tempo real.
+Do ponto de vista técnico, o maior desafio não foi apenas implementar ecrãs ou endpoints, mas ligar dados heterogéneos, autenticação centralizada, notificação push e sincronização entre serviços sem perder simplicidade de utilização.
 
 Os principais componentes desenvolvidos foram:
 
@@ -23,7 +23,7 @@ Os principais componentes desenvolvidos foram:
     \item Um orchestrator de scrapers baseado em GitHub Actions reusable workflows;
     \item Um worker de notificações que integra a base de dados com o Firebase Cloud Messaging;
     \item Uma aplicação web em React com TypeScript e Vite;
-    \item Uma aplicação móvel em React Native com Expo, com suporte a leitura de código de barras, georreferenciação, notificações push e internacionalização;
+    \item Uma aplicação móvel em React Native com Expo, com suporte a leitura de código de barras, localização, notificações push e internacionalização;
     \item Um gateway Nginx como ponto de entrada unificado para as aplicações cliente;
     \item Pipelines de \ac{CI/CD} com GitHub Actions para todos os serviços, com publicação automática no GitHub Container Registry e deployment nas plataformas Render.com e Fly.io;
     \item Um repositório \texttt{custom-label} com os workflows e configurações necessários para produzir e publicar variantes white label da aplicação móvel, sem alteração ao código-fonte partilhado.
@@ -40,7 +40,7 @@ O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em vária
 
 \textbf{Arquitetura multi-repositório.} A gestão de múltiplos repositórios com ciclos de desenvolvimento independentes requer disciplina no versionamento, na comunicação de contratos entre serviços e na coordenação de alterações que afetam múltiplos componentes. A utilização de GitHub Actions e de ficheiros de configuração declarativos (\texttt{render.yaml}) contribuiu para mitigar esta complexidade.
 
-\textbf{Georreferenciação e privacidade.} A funcionalidade de apresentação de lojas próximas requer acesso à localização do dispositivo, o que levanta considerações de privacidade que devem ser comunicadas ao utilizador de forma clara. A implementação respeita as boas práticas de pedido explícito de permissões em tempo de execução, em conformidade com as diretrizes das plataformas Android e iOS.
+\textbf{Localização e contexto de compra.} A funcionalidade de apresentação de preços próximos depende da localização do dispositivo, o que acrescenta valor à decisão do utilizador sem exigir um modelo geográfico pesado no servidor. O sistema pede permissão quando necessário e usa essa informação apenas para ordenar e contextualizar resultados.
 
 \section{Trabalho Futuro}
 \label{sec:7.3}

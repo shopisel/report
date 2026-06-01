@@ -14,8 +14,8 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[
-    node distance=1.2cm and 1.7cm,
+\begin{tikzpicture}[scale=0.9, transform shape,
+    node distance=1.0cm and 1.4cm,
     service/.style={rectangle, draw=black, rounded corners=4pt, fill=white,
                     minimum width=2.35cm, minimum height=0.9cm, font=\small, align=center},
     client/.style={rectangle, draw=black!70, rounded corners=4pt, fill=blue!12,
@@ -214,6 +214,10 @@ Os endpoints de produto suportam filtragem por identificadores, por categoria e 
     \item \texttt{GET /products/related?favoriteIds=...} — produtos relacionados com os favoritos.
 \end{itemize}
 
+O fluxo de correspondência usado no \texttt{/products/qrCode} segue duas fases. Primeiro é tentada uma correspondência exata pelo \texttt{barcode}, procurando no catálogo um produto com o mesmo código. Se isso falhar, o backend normaliza as palavras-chave recebidas, divide-as em tokens úteis e remove termos comuns que não ajudam na identificação. Depois executa uma filtragem inicial sobre o nome e a marca dos produtos para reduzir o conjunto de candidatos e aplica um \textit{ranking} interno com base em cobertura de palavras-chave, número de tokens coincidentes, semelhança textual, distância de Levenshtein~\cite{levenshtein-1966} e um pequeno reforço quando a marca também coincide. Se a correspondência for suficientemente forte, o produto é devolvido como \textit{exact}; caso contrário, são devolvidos produtos \textit{related} para apoiar a escolha do utilizador.
+
+O mesmo critério de distância e semelhança é reutilizado na funcionalidade \texttt{/products/related}, onde o objetivo deixa de ser validar um \texttt{barcode} e passa a ser encontrar produtos próximos dos favoritos do utilizador. Nesse caso, os nomes dos produtos favoritos são normalizados e comparados com candidatos da mesma categoria, usando a distância de Levenshtein para ordenar os resultados por proximidade lexical e devolver uma lista curta de sugestões mais prováveis.
+
 \subsection{Prices Service}
 \label{sec:4.2.3}
 
@@ -233,28 +237,29 @@ Os endpoints expostos são:
 \subsection{Stores Service}
 \label{sec:4.2.4}
 
-O Stores Service gere informação sobre lojas físicas, sendo fundamental para a funcionalidade de georreferenciação. A entidade \textbf{StoreEntity} inclui o nome e marca da loja, morada, cidade e coordenadas geográficas (\texttt{Latitude}, \texttt{Longitude}).
-
-A presença de coordenadas geográficas permite ao sistema calcular a distância entre o utilizador e cada loja, apresentando os preços mais vantajosos em função da proximidade geográfica — um dos elementos diferenciadores do ShopISEL.
+O Stores Service gere o catálogo de lojas do sistema. No estado atual, a informação exposta pelo serviço é deliberadamente simples, centrada no identificador e no nome da loja, servindo como base para associar preços e listas a pontos de venda concretos. A funcionalidade de ordenação por proximidade é tratada na aplicação cliente, que combina a lista de lojas recebida da API com a localização do utilizador quando essa informação está disponível.
 
 Os endpoints expostos são:
 
 \begin{itemize}
-    \item \texttt{GET /stores} — devolve a lista de todas as lojas registadas;
-    \item \texttt{GET /stores/\{storeId\}} — devolve os detalhes de uma loja específica;
-    \item \texttt{GET /stores/nearby?lat=\{lat\}\&lon=\{lon\}\&radius=\{km\}} — devolve as lojas num raio geográfico em torno das coordenadas fornecidas, ordenadas por proximidade;
-    \item \texttt{GET /health} — endpoint de monitorização.
+    \item \texttt{GET /stores} — devolve lojas por identificador ou por nome;
+    \item \texttt{POST /stores} — cria uma nova loja;
+    \item \texttt{PUT /stores/\{storeId\}} — atualiza uma loja;
+    \item \texttt{DELETE /stores/\{storeId\}} — elimina uma loja.
 \end{itemize}
 
 \subsection{Account Service}
 \label{sec:4.2.5}
 
-O Account Service gere o perfil do utilizador autenticado, sincronizando dados provenientes do token \ac{JWT} emitido pelo Keycloak (nome, email) e permitindo a atualização de preferências do perfil.
+O Account Service gere a conta do utilizador autenticado e funciona como ponto de contacto para funcionalidades transversais, como favoritos e tokens de push. O serviço sincroniza a conta a partir do token \ac{JWT} emitido pelo Keycloak e mantém informação operacional associada ao utilizador, sem duplicar a lógica de autenticação.
 
-O serviço expõe dois endpoints protegidos:
+Os endpoints expostos são:
 \begin{itemize}
-    \item \texttt{GET /accounts/me} — devolve o perfil do utilizador autenticado;
-    \item \texttt{PUT /accounts/me} — atualiza as preferências do perfil.
+    \item \texttt{POST /accounts/me/sync} — garante que a conta associada ao token existe na base de dados;
+    \item \texttt{GET /accounts/me/favorites} — devolve os produtos favoritos do utilizador autenticado;
+    \item \texttt{POST /accounts/me/favorites} — adiciona um produto aos favoritos;
+    \item \texttt{DELETE /accounts/me/favorites/\{productId\}} — remove um produto dos favoritos;
+    \item \texttt{POST /accounts/me/push-tokens} — regista ou atualiza o token FCM do dispositivo.
 \end{itemize}
 
 \subsection{MatchQueue Service}
@@ -334,6 +339,64 @@ O FCM Notification Worker é uma aplicação .NET de execução pontual (run-to-
 
 As notificações enviadas informam o utilizador de que o preço de um produto favorito desceu, incluindo nos dados da mensagem o identificador do produto e da notificação, permitindo à aplicação móvel navegar diretamente para o produto relevante.
 
+\section{Aplicação Web}
+\label{sec:4.5}
+
+A aplicação web do ShopISEL é desenvolvida em React com TypeScript e Vite, proporcionando uma interface moderna e responsiva para preparação e análise de compras num ambiente de desktop.
+
+A estrutura da aplicação segue uma organização por responsabilidade:
+\begin{itemize}
+    \item \texttt{src/api/}: camada de comunicação com os serviços de backend, abstraindo os detalhes de cada pedido HTTP;
+    \item \texttt{src/auth/}: integração com o Keycloak para autenticação, gestão do ciclo de vida do token e redirecionamentos;
+    \item \texttt{src/app/}: componentes de página e lógica de navegação;
+    \item \texttt{src/styles/}: estilos globais e configuração de temas.
+\end{itemize}
+
+A interface recorre a bibliotecas de componentes como Material UI, Radix UI e Tailwind CSS, que permitem construir ecrãs consistentes e acessíveis com menor esforço de implementação. O TypeScript garante a verificação estática dos tipos trocados com as APIs, reduzindo erros em tempo de execução.
+
+A aplicação web é servida em produção através de um servidor Nginx, sendo a imagem Docker publicada automaticamente pelo pipeline de \ac{CI/CD}.
+
+\section{Aplicação Móvel}
+\label{sec:4.6}
+
+A aplicação móvel é desenvolvida em React Native com o framework Expo, permitindo uma única base de código para Android e iOS. O Expo Router organiza a navegação por ficheiros e separa o fluxo principal em cinco separadores: \textit{Home}, \textit{Lists}, \textit{Scan}, \textit{Prices} e \textit{Profile}. Para além destes separadores, existem ainda ecrãs dedicados a \textit{Onboarding}, \textit{Auth} e \textit{Alerts}, que são apresentados no \textit{stack} principal da aplicação.
+
+O ecrã de leitura de códigos de barras é um dos pontos mais práticos da experiência móvel. A aplicação usa a câmara do dispositivo para capturar o código, extrai o identificador e consulta o serviço de produtos através do endpoint \texttt{/products/qrCode}, permitindo localizar o produto ou sugerir alternativas relacionadas. Esta abordagem mantém o fluxo simples: apontar a câmara, identificar o produto e avançar diretamente para a sua adição a uma lista ou comparação de preços.
+
+Quando o código lido corresponde a um \ac{EAN} e não existe informação suficientemente rica no catálogo local, a aplicação recorre ao serviço público Open Food Facts através do endereço \url{https://world.openfoodfacts.org/api/v0/product/{ean}.json}~\cite{openfoodfacts-api}. O pedido devolve dados como o nome do produto, marcas, categorias e etiquetas, que são usados para construir uma lista de palavras-chave mais útil para o backend. Nesse momento, a app envia ao endpoint \texttt{/products/qrCode} um corpo \ac{JSON} com dois campos: \texttt{barcode}, com o código lido, e \texttt{keywords}, com as palavras-chave extraídas do Open Food Facts. Isto permite que o backend tente primeiro uma correspondência exata e, caso não exista, procure produtos relacionados~\cite{gs1-ean-upc}.
+
+A componente de preços próximos utiliza o módulo de localização do Expo para obter a posição do utilizador e ordena os resultados em função da distância quando existem coordenadas disponíveis. O objetivo não é criar um sistema de georreferenciação complexo no servidor, mas sim aproveitar a localização do dispositivo para dar contexto à consulta de preços e tornar a informação mais útil no momento da compra.
+
+A organização do código fonte por domínio funcional facilita a manutenção e a extensão da aplicação:
+\begin{itemize}
+    \item \texttt{src/api/}: chamadas aos serviços de backend;
+    \item \texttt{src/auth/}: gestão do token de autenticação com armazenamento seguro;
+    \item \texttt{src/push/}: registo do token FCM e integração com notificações push;
+    \item \texttt{src/location/}: obtenção da localização do utilizador;
+    \item \texttt{src/favorites/}: gestão dos produtos favoritos do utilizador;
+    \item \texttt{src/i18n/}: suporte a múltiplos idiomas;
+    \item \texttt{src/theme/}: sistema de temas e estilos globais.
+\end{itemize}
+
+O NativeWind é utilizado para estilização, aplicando as utilidades do Tailwind CSS ao contexto React Native~\cite{nativewind-docs}, garantindo consistência visual com a aplicação web. O armazenamento seguro dos tokens de autenticação utiliza o Expo Secure Store, que persiste dados de forma cifrada no dispositivo.
+
+\section{Autenticação e Autorização}
+\label{sec:4.7}
+
+A autenticação e autorização no ShopISEL é centralizada no Keycloak, uma plataforma de gestão de identidade e acesso que implementa os protocolos \ac{OIDC} e OAuth 2.0.
+
+O fluxo de autenticação segue o padrão Authorization Code Flow com PKCE (Proof Key for Code Exchange), adequado tanto para aplicações web como para aplicações móveis. O utilizador é redirecionado para o servidor Keycloak para introduzir as suas credenciais; após autenticação bem-sucedida, é emitido um token de acesso \ac{JWT} que é enviado em cada pedido aos serviços protegidos. A Figura~\ref{fig:keycloak-flow} ilustra este fluxo.
+
+Os serviços que requerem autenticação (List Service e Account Service) validam o token da seguinte forma:
+\begin{enumerate}
+    \item Verificam que o emissor (\texttt{iss}) corresponde ao realm Keycloak configurado;
+    \item Verificam que o token não expirou (\texttt{exp});
+    \item Verificam que a chave de assinatura corresponde à chave pública do Keycloak (obtida via OIDC Discovery);
+    \item Verificam que o claim \texttt{azp} (authorized party) corresponde a um dos clientes autorizados (web, mobile).
+\end{enumerate}
+
+Esta abordagem evita que cada serviço implemente autenticação própria, centraliza a gestão de utilizadores no Keycloak e permite que novos serviços se integrem facilmente no ecossistema de autenticação existente.
+
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
@@ -374,68 +437,6 @@ As notificações enviadas informam o utilizador de que o preço de um produto f
 \caption{Fluxo de autenticação com Keycloak}
 \label{fig:keycloak-flow}
 \end{figure}
-
-\section{Aplicação Web}
-\label{sec:4.5}
-
-A aplicação web do ShopISEL é desenvolvida em React com TypeScript e Vite, proporcionando uma interface moderna e responsiva para preparação e análise de compras num ambiente de desktop.
-
-A estrutura da aplicação segue uma organização por responsabilidade:
-\begin{itemize}
-    \item \texttt{src/api/}: camada de comunicação com os serviços de backend, abstraindo os detalhes de cada pedido HTTP;
-    \item \texttt{src/auth/}: integração com o Keycloak para autenticação, gestão do ciclo de vida do token e redirecionamentos;
-    \item \texttt{src/app/}: componentes de página e lógica de navegação;
-    \item \texttt{src/styles/}: estilos globais e configuração de temas.
-\end{itemize}
-
-A interface recorre a bibliotecas de componentes como Material UI, Radix UI e Tailwind CSS, que permitem construir ecrãs consistentes e acessíveis com menor esforço de implementação. O TypeScript garante a verificação estática dos tipos trocados com as APIs, reduzindo erros em tempo de execução.
-
-A aplicação web é servida em produção através de um servidor Nginx, sendo a imagem Docker publicada automaticamente pelo pipeline de \ac{CI/CD}.
-
-\section{Aplicação Móvel}
-\label{sec:4.6}
-
-A aplicação móvel é desenvolvida em React Native com o framework Expo, permitindo o desenvolvimento de uma única base de código para Android e iOS. O Expo Router é utilizado para a navegação declarativa entre ecrãs, seguindo uma estrutura baseada em ficheiros análoga ao Next.js.
-
-A estrutura de navegação principal assenta em separadores (\textit{tabs}):
-\begin{itemize}
-    \item \textbf{Lists} (\texttt{(tabs)/}): ecrã principal de gestão de listas de compras;
-    \item \textbf{Alerts} (\texttt{alerts.tsx}): visualização dos alertas de preço recebidos;
-    \item \textbf{Auth} (\texttt{auth.tsx}): fluxo de autenticação com Keycloak;
-    \item \textbf{Onboarding} (\texttt{onboarding.tsx}): ecrã de boas-vindas e configuração inicial.
-\end{itemize}
-
-A organização do código fonte por domínio funcional facilita a manutenção e a extensão da aplicação:
-\begin{itemize}
-    \item \texttt{src/api/}: chamadas aos serviços de backend;
-    \item \texttt{src/auth/}: gestão do token de autenticação com Expo Secure Store;
-    \item \texttt{src/push/}: integração com Firebase Cloud Messaging para receção de notificações;
-    \item \texttt{src/location/}: serviços de georreferenciação para apresentação de lojas próximas;
-    \item \texttt{src/favorites/}: gestão dos produtos favoritos do utilizador;
-    \item \texttt{src/i18n/}: suporte a múltiplos idiomas (internacionalização);
-    \item \texttt{src/theme/}: sistema de temas e estilos globais.
-\end{itemize}
-
-A leitura de códigos de barras é realizada com o módulo Expo Camera, permitindo ao utilizador identificar rapidamente um produto durante a compra. O armazenamento seguro dos tokens de autenticação utiliza o Expo Secure Store, que persiste dados de forma cifrada no dispositivo.
-
-O NativeWind é utilizado para estilização, aplicando as utilidades do Tailwind CSS ao contexto React Native~\cite{nativewind-docs}, garantindo consistência visual com a aplicação web.
-
-\section{Autenticação e Autorização}
-\label{sec:4.7}
-
-A autenticação e autorização no ShopISEL é centralizada no Keycloak, uma plataforma de gestão de identidade e acesso que implementa os protocolos \ac{OIDC} e OAuth 2.0.
-
-O fluxo de autenticação segue o padrão Authorization Code Flow com PKCE (Proof Key for Code Exchange), adequado tanto para aplicações web como para aplicações móveis. O utilizador é redirecionado para o servidor Keycloak para introduzir as suas credenciais; após autenticação bem-sucedida, é emitido um token de acesso \ac{JWT} que é enviado em cada pedido aos serviços protegidos.
-
-Os serviços que requerem autenticação (List Service e Account Service) validam o token da seguinte forma:
-\begin{enumerate}
-    \item Verificam que o emissor (\texttt{iss}) corresponde ao realm Keycloak configurado;
-    \item Verificam que o token não expirou (\texttt{exp});
-    \item Verificam que a chave de assinatura corresponde à chave pública do Keycloak (obtida via OIDC Discovery);
-    \item Verificam que o claim \texttt{azp} (authorized party) corresponde a um dos clientes autorizados (web, mobile).
-\end{enumerate}
-
-Esta abordagem evita que cada serviço implemente autenticação própria, centraliza a gestão de utilizadores no Keycloak e permite que novos serviços se integrem facilmente no ecossistema de autenticação existente.
 
 \section{Gateway e Infraestrutura de Deployment}
 \label{sec:4.8}
