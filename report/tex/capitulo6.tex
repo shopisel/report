@@ -57,10 +57,10 @@ O conjunto de testes do List Service cobre os principais fluxos de negócio e re
 O teste \texttt{ListsCrudFlow\_WorksEndToEnd} valida o ciclo de vida completo de uma lista de compras:
 
 \begin{enumerate}
-    \item \textbf{Criação}: submete um pedido \texttt{POST /lists} com nome e dois itens. Verifica que a resposta tem código HTTP 201, que o identificador da lista começa com o prefixo \texttt{list\_} e que os dois itens foram criados com identificadores positivos.
+    \item \textbf{Criação}: submete um pedido \texttt{POST /lists} com nome e dois itens. Verifica que a resposta tem código HTTP 201, que o identificador da lista começa com o prefixo \texttt{list\_}, que os dois itens foram criados com identificadores positivos e que a lista inclui um token de versão válido.
     \item \textbf{Consulta}: faz \texttt{GET /lists/\{id\}} e verifica que o nome da lista corresponde ao submetido.
-    \item \textbf{Atualização}: submete \texttt{PUT /lists/\{id\}} com novo nome e um único item diferente. Verifica que a resposta reflete as alterações corretamente.
-    \item \textbf{Eliminação}: faz \texttt{DELETE /lists/\{id\}} e verifica que a resposta é HTTP 204. Subsequentemente, um \texttt{GET /lists/\{id\}} deve retornar HTTP 404.
+    \item \textbf{Atualização}: submete \texttt{PUT /lists/\{id\}} com novo nome, um único item diferente e o header \texttt{If-Match} com a versão obtida na criação. Verifica que a resposta reflete as alterações corretamente e que a versão da lista foi atualizada.
+    \item \textbf{Eliminação}: faz \texttt{DELETE /lists/\{id\}} com o header \texttt{If-Match} correspondente à versão mais recente e verifica que a resposta é HTTP 204. Subsequentemente, um \texttt{GET /lists/\{id\}} deve retornar HTTP 404.
 \end{enumerate}
 
 \subsection{Isolamento por proprietário}
@@ -86,6 +86,20 @@ O teste \texttt{GetAll\_ReturnsOnlyListsFromAuthenticatedUser} verifica que o en
     \item O utilizador A executa \texttt{GET /lists} e verifica que a resposta contém a sua lista mas não a do utilizador B.
 \end{enumerate}
 
+\subsection{Conflito de concorrência}
+\label{sec:6.3.4}
+
+O teste \texttt{Update\_WithStaleVersion\_ReturnsConflict} valida o mecanismo de concorrência optimista quando duas atualizações concorrem sobre a mesma lista:
+
+\begin{enumerate}
+    \item Cria uma lista e regista a versão devolvida na resposta;
+    \item Executa uma primeira atualização bem-sucedida com o header \texttt{If-Match} correto, obtendo uma nova versão;
+    \item Submete uma segunda atualização reutilizando deliberadamente a versão original, já obsoleta;
+    \item Verifica que o serviço responde com HTTP 409 (\textit{Conflict}), confirmando que alterações concorrentes não sobrescrevem uns aos outros de forma silenciosa.
+\end{enumerate}
+
+Este teste garante que o contrato de versão funciona de ponta a ponta — desde a persistência com token de concorrência até à tradução do conflito numa resposta HTTP previsível para as aplicações cliente.
+
 \section{Execução dos Testes nas Pipelines de CI/CD}
 \label{sec:6.4}
 
@@ -102,7 +116,8 @@ A validação funcional incluiu os seguintes cenários:
 
 \begin{itemize}
     \item \textbf{Registo e autenticação}: criação de conta no Keycloak, login a partir da aplicação web e da aplicação móvel, renovação de token e logout;
-    \item \textbf{Gestão de listas}: criação, edição e eliminação de listas de compras na aplicação web e na aplicação móvel, com verificação da sincronização entre dispositivos;
+    \item \textbf{Gestão de listas}: criação, edição e eliminação de listas de compras na aplicação web e na aplicação móvel, com verificação da sincronização entre dispositivos e do tratamento de conflitos quando a mesma lista é editada em simultâneo a partir de clientes diferentes;
+    \item \textbf{Personalização white label}: execução manual do workflow de publicação com parâmetros de marca distintos e verificação de que a aplicação implantada reflete corretamente o nome, logótipo e cores configurados;
     \item \textbf{Pesquisa de produtos}: pesquisa por nome e por categoria, consulta de preços por loja e identificação por código de barras;
     \item \textbf{Leitura de código de barras}: captura pela câmara na aplicação móvel, consulta ao backend e sugestão de produto ou alternativas relacionadas;
     \item \textbf{Georreferenciação}: pedido de localização no dispositivo e ordenação dos resultados por proximidade;

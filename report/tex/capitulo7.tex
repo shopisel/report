@@ -22,11 +22,12 @@ Os principais componentes desenvolvidos foram:
     \item Dois scrapers baseados em Playwright para recolha automática de dados do Continente e do Pingo Doce;
     \item Um orchestrator de scrapers baseado em GitHub Actions reusable workflows;
     \item Um worker de notificações que integra a base de dados com o Firebase Cloud Messaging;
-    \item Uma aplicação web em React com TypeScript e Vite;
+    \item Uma aplicação web em React com TypeScript e Vite, com suporte a concorrência optimista nas listas de compras e arquitectura white-label dinâmica injectada em tempo de \textit{build};
     \item Uma aplicação móvel em React Native com Expo, com suporte a leitura de código de barras, localização, notificações push e internacionalização;
     \item Um gateway Nginx como ponto de entrada unificado para as aplicações cliente;
     \item Pipelines de \ac{CI/CD} com GitHub Actions para todos os serviços, com publicação automática no GitHub Container Registry e deployment nas plataformas Render.com e Fly.io;
-    \item Um repositório \texttt{custom-label} com os workflows e configurações necessários para produzir e publicar variantes white label da aplicação móvel, sem alteração ao código-fonte partilhado.
+    \item Mecanismos de concorrência optimista e tratamento centralizado de erros no List Service, com adaptação correspondente nas aplicações cliente;
+    \item Pipeline de personalização white label na aplicação web, activável por parâmetros no workflow de \ac{CI/CD} sem alteração ao código-fonte partilhado.
 \end{itemize}
 
 \section{Desafios Encontrados}
@@ -39,6 +40,8 @@ O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em vária
 \textbf{Isolamento de autenticação em testes.} A integração com o Keycloak é essencial para a segurança do sistema, mas representa um ponto de dependência externa nos testes. A solução encontrada, com a criação de um \texttt{TestAuthHandler} que simula a autenticação em contexto de teste, permite executar testes de integração completos sem necessidade de uma instância Keycloak externa.
 
 \textbf{Arquitetura multi-repositório.} A gestão de múltiplos repositórios com ciclos de desenvolvimento independentes requer disciplina no versionamento, na comunicação de contratos entre serviços e na coordenação de alterações que afetam múltiplos componentes. A utilização de GitHub Actions e de ficheiros de configuração declarativos (\texttt{render.yaml}) contribuiu para mitigar esta complexidade.
+
+\textbf{Sincronização multi-cliente.} A possibilidade de editar a mesma lista a partir da aplicação web e da aplicação móvel impôs a adopção de concorrência optimista no List Service e a adaptação das aplicações cliente ao novo contrato de versão. Este desafio transversal exigiu alterações coordenadas entre backend e frontend, bem como testes que validassem não só o comportamento isolado da API, mas também a experiência do utilizador perante conflitos de actualização.
 
 \textbf{Localização e contexto de compra.} A funcionalidade de apresentação de preços próximos depende da localização do dispositivo, o que acrescenta valor à decisão do utilizador sem exigir um modelo geográfico pesado no servidor. O sistema pede permissão quando necessário e usa essa informação apenas para ordenar e contextualizar resultados.
 
@@ -57,7 +60,7 @@ O ShopISEL foi desenvolvido com uma arquitetura extensível, que facilita a adi�
 
 \textbf{Digitalização de talões.} A leitura e análise de talões de compra por OCR permitiria ao utilizador registar automaticamente o que comprou, o preço pago e a loja, construindo um histórico de compras pessoal e alimentando o sistema com dados de preços reais praticados.
 
-\textbf{Desenvolvimento White Label.} A arquitetura modular da plataforma e a capacidade de customização das aplicações cliente através de pipelines de \ac{CI/CD} dedicadas abre a possibilidade de oferecer o sistema como plataforma white label, adaptável a diferentes contextos de retalho ou parceiros comerciais. A base para este modelo está já implementada no repositório \texttt{custom-label}, que demonstra a viabilidade da abordagem e serve de ponto de partida para variantes futuras.
+\textbf{Extensão do white label.} A arquitectura white-label dinâmica já implementada na aplicação web pode ser alargada à aplicação móvel, replicando o mesmo princípio de injecção de parâmetros de marca no processo de \textit{build}. Outras evoluções naturais incluem suportar mais elementos configuráveis — como tipografia ou textos de \textit{onboarding} — e automatizar a criação de variantes a partir de um painel de gestão, em vez de depender exclusivamente da execução manual do workflow de publicação.
 
 \section{Considerações Finais}
 \label{sec:7.4}
