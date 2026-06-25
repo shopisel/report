@@ -1,0 +1,55 @@
+% !TeX spellcheck = pt_PT
+
+\chapter{Conclusão}
+\label{chap:8}
+
+Este capítulo apresenta uma síntese do trabalho desenvolvido no âmbito do projeto ShopISEL e reflete sobre os principais desafios encontrados. As direções de evolução futura identificadas mas não exploradas no âmbito deste projeto, por restrições de tempo, são apresentadas em detalhe no Capítulo~\ref{chap:7}.
+
+\section{Síntese do Trabalho Desenvolvido}
+\label{sec:8.1}
+
+O ShopISEL partiu de uma necessidade concreta dos consumidores: organizar compras num contexto de múltiplas insígnias, preços variáveis e informação dispersa. A solução desenvolvida reúne uma aplicação móvel, uma aplicação web e uma infraestrutura backend baseada em microserviços.
+
+Em termos funcionais, a plataforma já cobre os fluxos principais do projeto: gestão de listas, consulta de preços, alertas de descida de preço, leitura de códigos de barras e apresentação de preços com base na localização do utilizador quando aplicável. Estes elementos mostram que o sistema não ficou apenas pela ideia inicial, mas evoluiu para um conjunto de funcionalidades utilizáveis em contexto real.
+
+Do ponto de vista técnico, o maior desafio não foi apenas implementar ecrãs ou endpoints, mas ligar dados heterogéneos, autenticação centralizada, notificação push e sincronização entre serviços sem perder simplicidade de utilização.
+
+Os principais componentes desenvolvidos foram:
+
+\begin{itemize}
+    \item Cinco serviços de backend em ASP.NET Core (listas, produtos, preços, lojas, contas), cada um com persistência relacional em PostgreSQL;
+    \item Um serviço híbrido (MatchQueue) que faz a ponte entre dados de scraping armazenados em MongoDB e a base de dados relacional normalizada;
+    \item Dois scrapers baseados em Playwright para recolha automática de dados do Continente e do Pingo Doce;
+    \item Um orchestrator de scrapers baseado em GitHub Actions reusable workflows;
+    \item Um worker de notificações que integra a base de dados com o Firebase Cloud Messaging;
+    \item Uma aplicação web em React com TypeScript e Vite, com suporte a concorrência optimista nas listas de compras e arquitectura white-label dinâmica injectada em tempo de \textit{build};
+    \item Uma aplicação móvel em React Native com Expo, com suporte a leitura de código de barras, localização, notificações push e internacionalização;
+    \item Um gateway Nginx como ponto de entrada unificado para as aplicações cliente;
+    \item Pipelines de \ac{CI/CD} com GitHub Actions para todos os serviços, com publicação automática no GitHub Container Registry e deployment nas plataformas Render.com e Fly.io;
+    \item Mecanismos de concorrência optimista e tratamento centralizado de erros no List Service, com adaptação correspondente nas aplicações cliente;
+    \item Pipeline de personalização white label na aplicação web, activável por parâmetros no workflow de \ac{CI/CD} sem alteração ao código-fonte partilhado.
+\end{itemize}
+
+\section{Desafios Encontrados}
+\label{sec:8.2}
+
+O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em várias frentes.
+
+\textbf{Recolha e normalização de dados.} A extração de dados dos websites do Continente e do Pingo Doce revelou-se um processo frágil, dado que as estruturas HTML das páginas podem mudar sem aviso. O uso do Playwright permitiu lidar com páginas de renderização dinâmica, mas a manutenção dos scrapers exige atenção contínua às alterações dos websites fontes. A normalização dos dados provenientes de fontes heterogéneas, com formatos e nomenclaturas distintos, exigiu a criação de uma camada de matching (MatchQueue Service) que identificasse o mesmo produto em diferentes insígnias.
+
+\textbf{Isolamento de autenticação em testes.} A integração com o Keycloak é essencial para a segurança do sistema, mas representa um ponto de dependência externa nos testes. A solução encontrada, com a criação de um \texttt{TestAuthHandler} que simula a autenticação em contexto de teste, permite executar testes de integração completos sem necessidade de uma instância Keycloak externa.
+
+\textbf{Arquitetura multi-repositório.} A gestão de múltiplos repositórios com ciclos de desenvolvimento independentes requer disciplina no versionamento, na comunicação de contratos entre serviços e na coordenação de alterações que afetam múltiplos componentes. A utilização de GitHub Actions e de ficheiros de configuração declarativos (\texttt{render.yaml}) contribuiu para mitigar esta complexidade.
+
+\textbf{Sincronização multi-cliente.} A possibilidade de editar a mesma lista a partir da aplicação web e da aplicação móvel impôs a adopção de concorrência optimista no List Service e a adaptação das aplicações cliente ao novo contrato de versão. Este desafio transversal exigiu alterações coordenadas entre backend e frontend, bem como testes que validassem não só o comportamento isolado da API, mas também a experiência do utilizador perante conflitos de actualização.
+
+\textbf{Localização e contexto de compra.} A funcionalidade de apresentação de preços próximos depende da localização do dispositivo, o que acrescenta valor à decisão do utilizador sem exigir um modelo geográfico pesado no servidor. O sistema pede permissão quando necessário e usa essa informação apenas para ordenar e contextualizar resultados.
+
+\section{Considerações Finais}
+\label{sec:8.3}
+
+O projeto ShopISEL demonstra que é possível, com tecnologias modernas e práticas de engenharia de software bem estabelecidas, construir uma plataforma digital de qualidade que responde a uma necessidade real dos consumidores. A combinação de uma arquitetura orientada a serviços, recolha automática de dados, autenticação centralizada, notificações push e interfaces nativas para web e mobile resulta num sistema coerente, extensível e pronto para evolução.
+
+A adoção de práticas de \ac{CI/CD}, containerização e deployment declarativo garante que o sistema pode ser evoluído e entregue com confiança, mantendo a qualidade e a consistência ao longo do ciclo de vida do produto.
+
+Em suma, o ShopISEL representa um primeiro passo sólido para uma plataforma de apoio à decisão de compra que, com as direções de evolução apresentadas no Capítulo~\ref{chap:7}, tem potencial para se tornar uma ferramenta genuinamente útil no quotidiano dos consumidores portugueses.

@@ -1,56 +1,14 @@
 % !TeX spellcheck = pt_PT
 
-\chapter{Conclusão}
+\chapter{Trabalho Futuro}
 \label{chap:7}
 
-Este capítulo apresenta uma síntese do trabalho desenvolvido no âmbito do projeto ShopISEL, reflete sobre os principais desafios encontrados e identifica possibilidades de evolução futura da plataforma.
+Ao longo do desenvolvimento do ShopISEL foram identificados diversos temas e melhorias que, por restrições de tempo, não foi possível explorar ou implementar no âmbito deste projeto. Este capítulo agrupa essas direções de evolução futura por área de incidência: evolução funcional da plataforma, recolha de dados e inteligência artificial, resiliência e infraestrutura, e distribuição da aplicação móvel.
 
-\section{Síntese do Trabalho Desenvolvido}
+\section{Evolução Funcional}
 \label{sec:7.1}
 
-O ShopISEL partiu de uma necessidade concreta dos consumidores: organizar compras num contexto de múltiplas insígnias, preços variáveis e informação dispersa. A solução desenvolvida reúne uma aplicação móvel, uma aplicação web e uma infraestrutura backend baseada em microserviços.
-
-Em termos funcionais, a plataforma já cobre os fluxos principais do projeto: gestão de listas, consulta de preços, alertas de descida de preço, leitura de códigos de barras e apresentação de preços com base na localização do utilizador quando aplicável. Estes elementos mostram que o sistema não ficou apenas pela ideia inicial, mas evoluiu para um conjunto de funcionalidades utilizáveis em contexto real.
-
-Do ponto de vista técnico, o maior desafio não foi apenas implementar ecrãs ou endpoints, mas ligar dados heterogéneos, autenticação centralizada, notificação push e sincronização entre serviços sem perder simplicidade de utilização.
-
-Os principais componentes desenvolvidos foram:
-
-\begin{itemize}
-    \item Cinco serviços de backend em ASP.NET Core (listas, produtos, preços, lojas, contas), cada um com persistência relacional em PostgreSQL;
-    \item Um serviço híbrido (MatchQueue) que faz a ponte entre dados de scraping armazenados em MongoDB e a base de dados relacional normalizada;
-    \item Dois scrapers baseados em Playwright para recolha automática de dados do Continente e do Pingo Doce;
-    \item Um orchestrator de scrapers baseado em GitHub Actions reusable workflows;
-    \item Um worker de notificações que integra a base de dados com o Firebase Cloud Messaging;
-    \item Uma aplicação web em React com TypeScript e Vite, com suporte a concorrência optimista nas listas de compras e arquitectura white-label dinâmica injectada em tempo de \textit{build};
-    \item Uma aplicação móvel em React Native com Expo, com suporte a leitura de código de barras, localização, notificações push e internacionalização;
-    \item Um gateway Nginx como ponto de entrada unificado para as aplicações cliente;
-    \item Pipelines de \ac{CI/CD} com GitHub Actions para todos os serviços, com publicação automática no GitHub Container Registry e deployment nas plataformas Render.com e Fly.io;
-    \item Mecanismos de concorrência optimista e tratamento centralizado de erros no List Service, com adaptação correspondente nas aplicações cliente;
-    \item Pipeline de personalização white label na aplicação web, activável por parâmetros no workflow de \ac{CI/CD} sem alteração ao código-fonte partilhado.
-\end{itemize}
-
-\section{Desafios Encontrados}
-\label{sec:7.2}
-
-O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em várias frentes.
-
-\textbf{Recolha e normalização de dados.} A extração de dados dos websites do Continente e do Pingo Doce revelou-se um processo frágil, dado que as estruturas HTML das páginas podem mudar sem aviso. O uso do Playwright permitiu lidar com páginas de renderização dinâmica, mas a manutenção dos scrapers exige atenção contínua às alterações dos websites fontes. A normalização dos dados provenientes de fontes heterogéneas, com formatos e nomenclaturas distintos, exigiu a criação de uma camada de matching (MatchQueue Service) que identificasse o mesmo produto em diferentes insígnias.
-
-\textbf{Isolamento de autenticação em testes.} A integração com o Keycloak é essencial para a segurança do sistema, mas representa um ponto de dependência externa nos testes. A solução encontrada, com a criação de um \texttt{TestAuthHandler} que simula a autenticação em contexto de teste, permite executar testes de integração completos sem necessidade de uma instância Keycloak externa.
-
-\textbf{Arquitetura multi-repositório.} A gestão de múltiplos repositórios com ciclos de desenvolvimento independentes requer disciplina no versionamento, na comunicação de contratos entre serviços e na coordenação de alterações que afetam múltiplos componentes. A utilização de GitHub Actions e de ficheiros de configuração declarativos (\texttt{render.yaml}) contribuiu para mitigar esta complexidade.
-
-\textbf{Sincronização multi-cliente.} A possibilidade de editar a mesma lista a partir da aplicação web e da aplicação móvel impôs a adopção de concorrência optimista no List Service e a adaptação das aplicações cliente ao novo contrato de versão. Este desafio transversal exigiu alterações coordenadas entre backend e frontend, bem como testes que validassem não só o comportamento isolado da API, mas também a experiência do utilizador perante conflitos de actualização.
-
-\textbf{Localização e contexto de compra.} A funcionalidade de apresentação de preços próximos depende da localização do dispositivo, o que acrescenta valor à decisão do utilizador sem exigir um modelo geográfico pesado no servidor. O sistema pede permissão quando necessário e usa essa informação apenas para ordenar e contextualizar resultados.
-
-\section{Trabalho Futuro}
-\label{sec:7.3}
-
-O ShopISEL foi desenvolvido com uma arquitetura extensível, que facilita a adição de novas funcionalidades e o alargamento do âmbito do sistema. As principais direções de evolução identificadas são:
-
-\textbf{Suporte a novas insígnias.} A adição de novos scrapers para outras cadeias de supermercados portuguesas (e.g., Auchan, Lidl, Intermarché) é a extensão mais natural do sistema, não requerendo alterações à infraestrutura central. Cada nova insígnia corresponde a um novo repositório de scraper com um workflow reutilizável registado no orchestrator.
+O ShopISEL foi desenvolvido com uma arquitetura extensível, que facilita a adição de novas funcionalidades e o alargamento do âmbito do sistema. As principais direções de evolução funcional identificadas são:
 
 \textbf{Histórico de preços e análise de tendências.} Atualmente, o sistema mantém o preço mais recente de cada produto por loja. A extensão do modelo de dados para preservar o histórico completo de variações permitiria apresentar ao utilizador gráficos de evolução de preço e detetar padrões sazonais.
 
@@ -58,15 +16,33 @@ O ShopISEL foi desenvolvido com uma arquitetura extensível, que facilita a adi�
 
 \textbf{Partilha de listas.} A funcionalidade de partilha de listas de compras entre utilizadores (e.g., membros de uma família) é uma extensão natural do modelo atual, que requer a adição de um mecanismo de partilha e controlo de acesso ao nível do List Service.
 
-\textbf{Digitalização de talões.} A leitura e análise de talões de compra por OCR permitiria ao utilizador registar automaticamente o que comprou, o preço pago e a loja, construindo um histórico de compras pessoal e alimentando o sistema com dados de preços reais praticados.
+\textbf{Digitalização de talões.} A leitura e análise de talões de compra por \ac{OCR} permitiria ao utilizador registar automaticamente o que comprou, o preço pago e a loja, construindo um histórico de compras pessoal e alimentando o sistema com dados de preços reais praticados.
 
 \textbf{Extensão do white label.} A arquitectura white-label dinâmica já implementada na aplicação web pode ser alargada à aplicação móvel, replicando o mesmo princípio de injecção de parâmetros de marca no processo de \textit{build}. Outras evoluções naturais incluem suportar mais elementos configuráveis — como tipografia ou textos de \textit{onboarding} — e automatizar a criação de variantes a partir de um painel de gestão, em vez de depender exclusivamente da execução manual do workflow de publicação.
 
-\section{Considerações Finais}
+\section{Recolha de Dados e Inteligência Artificial}
+\label{sec:7.2}
+
+A qualidade dos dados recolhidos é central ao valor do ShopISEL, e foram identificadas várias direções para a tornar mais robusta e abrangente.
+
+\textbf{Suporte a novas insígnias.} A adição de novos scrapers para outras cadeias de supermercados portuguesas (e.g., Auchan, Lidl, Intermarché) é a extensão mais natural do sistema, não requerendo alterações à infraestrutura central. Cada nova insígnia corresponde a um novo repositório de scraper com um workflow reutilizável registado no orchestrator.
+
+\textbf{Melhorias futuras no scraper.} Os scrapers desenvolvidos cumprem o seu propósito, mas dependem da estrutura atual das páginas do Continente e do Pingo Doce, que pode mudar sem aviso. Trabalho futuro nesta área inclui mecanismos de deteção automática de falhas de extração (e.g., alertas quando o número de produtos recolhidos cai abruptamente face ao habitual), maior cobertura de categorias de produtos e a otimização do tempo de execução dos scrapers.
+
+\textbf{Utilização de \ac{IA} na deteção de produtos.} A normalização e correspondência de produtos entre insígnias é atualmente feita com regras de matching desenvolvidas manualmente no MatchQueue Service. A integração de técnicas de inteligência artificial — como modelos de \textit{embeddings} de texto ou de visão computacional sobre as imagens dos produtos — poderia melhorar significativamente a precisão da deteção de produtos equivalentes entre diferentes lojas, reduzindo a necessidade de regras manuais e facilitando a adição de novas insígnias.
+
+\section{Resiliência e Infraestrutura}
+\label{sec:7.3}
+
+A arquitetura atual cobre os fluxos principais do sistema, mas foram identificadas lacunas de robustez que não chegaram a ser endereçadas.
+
+\textbf{Tratamento de falhas de serviços indisponíveis.} Atualmente, se um dos serviços de backend ficar indisponível, os pedidos que dele dependem falham sem um tratamento uniforme do erro, podendo resultar em respostas pouco claras para as aplicações cliente. Uma direção de evolução natural passa pela introdução de padrões de resiliência — como \textit{circuit breaker}, \textit{retry} com \textit{backoff} e respostas de erro estruturadas e consistentes — para que a indisponibilidade pontual de um serviço seja comunicada de forma clara, sem comprometer a experiência do utilizador nas restantes funcionalidades.
+
+\textbf{Contingência para indisponibilidade do Keycloak.} Toda a autenticação do sistema depende de uma única instância do Keycloak; se esta ficar indisponível, nenhum serviço protegido consegue validar tokens \ac{JWT}, mesmo que o token já tenha sido emitido anteriormente. Uma evolução futura poderia explorar a colocação em cache das chaves públicas de validação já obtidas, com um período de tolerância, ou a configuração de uma instância secundária do Keycloak em alta disponibilidade, reduzindo o impacto de uma falha do serviço de autenticação.
+
+\textbf{Gateway como \textit{load balancer}.} O gateway Nginx assume atualmente apenas o papel de encaminhamento de pedidos por caminho de \ac{URL} para uma única instância de cada serviço. Para suportar maior carga, o gateway poderia ser reconfigurado para distribuir pedidos entre múltiplas réplicas de cada serviço, permitindo escalabilidade horizontal real e tolerância a falhas de instâncias individuais, sem alterações à lógica dos serviços de backend.
+
+\section{Distribuição da Aplicação Móvel}
 \label{sec:7.4}
 
-O projeto ShopISEL demonstra que é possível, com tecnologias modernas e práticas de engenharia de software bem estabelecidas, construir uma plataforma digital de qualidade que responde a uma necessidade real dos consumidores. A combinação de uma arquitetura orientada a serviços, recolha automática de dados, autenticação centralizada, notificações push e interfaces nativas para web e mobile resulta num sistema coerente, extensível e pronto para evolução.
-
-A adoção de práticas de \ac{CI/CD}, containerização e deployment declarativo garante que o sistema pode ser evoluído e entregue com confiança, mantendo a qualidade e a consistência ao longo do ciclo de vida do produto.
-
-Em suma, o ShopISEL representa um primeiro passo sólido para uma plataforma de apoio à decisão de compra que, com as evoluções descritas, tem potencial para se tornar uma ferramenta genuinamente útil no quotidiano dos consumidores portugueses.
+\textbf{Publicação nas lojas oficiais de aplicações.} A aplicação móvel foi desenvolvida com Expo e testada em ambiente de desenvolvimento, mas ainda não foi submetida às lojas oficiais. A publicação na Google Play Store e na Apple App Store é um passo natural para tornar o ShopISEL acessível ao público em geral, exigindo a preparação de processos de \textit{build} de produção, conformidade com as políticas de cada loja e a gestão de atualizações através dos respetivos canais.

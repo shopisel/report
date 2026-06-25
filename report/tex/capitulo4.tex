@@ -8,7 +8,7 @@ Este capítulo apresenta em detalhe a arquitetura, as tecnologias e a implementa
 \section{Visão Geral da Arquitetura}
 \label{sec:4.1}
 
-O ShopISEL segue uma arquitetura orientada a serviços, em que cada domínio funcional é tratado por um serviço autónomo com a sua própria base de dados, lógica de negócio e ciclo de deployment. Esta separação permite que cada serviço evolua de forma independente, reduz o acoplamento entre componentes e facilita a escalabilidade horizontal de cada parte do sistema.
+O ShopISEL segue uma arquitetura orientada a serviços, em que cada domínio funcional é tratado por um serviço autónomo com a sua própria lógica de negócio e ciclo de deployment, partilhando uma única base de dados PostgreSQL na qual cada serviço gere a sua própria tabela. Esta separação permite que cada serviço evolua de forma independente, reduz o acoplamento entre componentes e facilita a escalabilidade horizontal de cada parte do sistema.
 
 A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sistema.
 
@@ -45,12 +45,8 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 \node[service, right=1.1cm of products] (prices) {Prices\\Service};
 \node[service, right=1.1cm of prices] (stores) {Stores\\Service};
 
-% Databases row
-\node[db, below=of account] (db-acc) {PostgreSQL};
-\node[db, below=of list] (db-list) {PostgreSQL};
-\node[db, below=of products] (db-prod) {PostgreSQL};
-\node[db, below=of prices] (db-pr) {PostgreSQL};
-\node[db, below=of stores] (db-st) {PostgreSQL};
+% Shared database
+\node[db, below=1.3cm of $(account)!0.5!(stores)$] (db) {PostgreSQL};
 
 % Client flow
 \draw[darr] (kc.south east) -- (nginx.north west);
@@ -64,21 +60,22 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 \draw[arr] (nginx.south) -- ++(0,-0.45) -| (prices.north);
 \draw[arr] (nginx.south) -- ++(0,-0.45) -| (stores.north);
 
-% Backend services to their databases and auth
-\draw[arr] (account.south) -- (db-acc.north);
-\draw[arr] (list.south) -- (db-list.north);
-\draw[arr] (products.south) -- (db-prod.north);
-\draw[arr] (prices.south) -- (db-pr.north);
-\draw[arr] (stores.south) -- (db-st.north);
-\draw[darr] (account.west) -- (kc.south east);
-\draw[darr] (list.west) -- ++(-0.5,0) |- (kc.south);
+% Backend services share a single database (one table per service) and auth
+\draw[arr] (account.south) -- ++(0,-0.45) -| (db.north);
+\draw[arr] (list.south) -- ++(0,-0.45) -| (db.north);
+\draw[arr] (products.south) -- (db.north);
+\draw[arr] (prices.south) -- ++(0,-0.45) -| (db.north);
+\draw[arr] (stores.south) -- ++(0,-0.45) -| (db.north);
+\coordinate (gap-al) at ($(account.east)!0.5!(list.west)$);
+\draw[darr] (kc.south) -- ++(0,-2.0) |- (account.west);
+\draw[darr] (kc.south) -- ++(0,-1.9) -| (gap-al) -- (list.west);
 
 \end{tikzpicture}
 \caption{Visão geral da arquitetura do sistema ShopISEL}
 \label{fig:arquitetura}
 \end{figure}
 
-Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend comunicam com as suas respetivas bases de dados PostgreSQL e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
+Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend partilham uma única base de dados PostgreSQL, na qual cada serviço gere a sua própria tabela, e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
 
 A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue Service processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
 
