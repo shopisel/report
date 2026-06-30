@@ -123,8 +123,7 @@ estrutura de DOM, navegação e regras de extração, ambos perseguem o mesmo
 objetivo funcional: recolher automaticamente produtos por categoria e extrair
 informação como nome, preço, promoção, imagem e disponibilidade. Esta separação
 permite adaptar a lógica de scraping às particularidades de cada insígnia sem afetar
-as restantes. Os resultados podem ser sincronizados com PostgreSQL através da
-variável de ambiente \texttt{PRODUCTS\_DB\_CONNECTION}. No caso do Pingo Doce, a
+as restantes. Os resultados são persistidos em MongoDB, utilizando a variável de ambiente \texttt{SCRAPER\_MONGO\_CONNECTION} para configurar a ligação. No caso do Pingo Doce, a
 utilização de Playwright é adequada a páginas dinâmicas, uma vez que esta ferramenta
 permite automatizar browsers e interagir com conteúdo renderizado no cliente. A
 existência de ficheiros \ac{JSON} de saída também facilita a validação dos dados
@@ -142,11 +141,9 @@ onde coexistem serviços .NET, frontend web, gateway Nginx e componentes de supo
 O repositório inclui Dockerfiles e workflows de GitHub Actions para automatizar
 validação, construção e publicação de imagens. GitHub Actions suporta a automatização
 de workflows diretamente no repositório, incluindo tarefas de integração e entrega
-contínua~\cite{github-actions}. A configuração de deployment usa Render, com serviços
+contínua~\cite{github-actions}. A configuração de deployment usa Fly.io, com serviços
 baseados em imagens e um Nginx configurado como ponto de entrada para encaminhar
-pedidos para frontend, listas, produtos, lojas e preços. A documentação do Render
-suporta este modelo de deployment com imagens Docker pré-construídas ou Dockerfiles
-do repositório~\cite{render-docker}.
+pedidos para o frontend e os serviços de backend.
 
 \section{Síntese}
 \label{sec:2.9}

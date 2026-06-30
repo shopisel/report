@@ -22,11 +22,11 @@ Os principais componentes desenvolvidos foram:
     \item Dois scrapers baseados em Playwright para recolha automática de dados do Continente e do Pingo Doce;
     \item Um orchestrator de scrapers baseado em GitHub Actions reusable workflows;
     \item Um worker de notificações que integra a base de dados com o Firebase Cloud Messaging;
-    \item Uma aplicação web em React com TypeScript e Vite, com suporte a concorrência optimista nas listas de compras e arquitectura white-label dinâmica injectada em tempo de \textit{build};
+    \item Uma aplicação web em React com TypeScript e Vite, com suporte a concorrência otimista nas listas de compras e arquitetura white-label dinâmica injetada em tempo de \textit{build};
     \item Uma aplicação móvel em React Native com Expo, com suporte a leitura de código de barras, localização, notificações push e internacionalização;
     \item Um gateway Nginx como ponto de entrada unificado para as aplicações cliente;
-    \item Pipelines de \ac{CI/CD} com GitHub Actions para todos os serviços, com publicação automática no GitHub Container Registry e deployment nas plataformas Render.com e Fly.io;
-    \item Mecanismos de concorrência optimista e tratamento centralizado de erros no List Service, com adaptação correspondente nas aplicações cliente;
+    \item Pipelines de \ac{CI/CD} com GitHub Actions para todos os serviços, com publicação automática no GitHub Container Registry e deployment na plataforma Fly.io;
+    \item Mecanismos de concorrência otimista e tratamento centralizado de erros no List Service, com adaptação correspondente nas aplicações cliente;
     \item Pipeline de personalização white label na aplicação web, activável por parâmetros no workflow de \ac{CI/CD} sem alteração ao código-fonte partilhado.
 \end{itemize}
 
@@ -41,7 +41,7 @@ O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em vária
 
 \textbf{Arquitetura multi-repositório.} A gestão de múltiplos repositórios com ciclos de desenvolvimento independentes requer disciplina no versionamento, na comunicação de contratos entre serviços e na coordenação de alterações que afetam múltiplos componentes. A utilização de GitHub Actions e de ficheiros de configuração declarativos (\texttt{render.yaml}) contribuiu para mitigar esta complexidade.
 
-\textbf{Sincronização multi-cliente.} A possibilidade de editar a mesma lista a partir da aplicação web e da aplicação móvel impôs a adopção de concorrência optimista no List Service e a adaptação das aplicações cliente ao novo contrato de versão. Este desafio transversal exigiu alterações coordenadas entre backend e frontend, bem como testes que validassem não só o comportamento isolado da API, mas também a experiência do utilizador perante conflitos de actualização.
+\textbf{Sincronização multi-cliente.} A possibilidade de editar a mesma lista a partir da aplicação web e da aplicação móvel impôs a adoção de concorrência otimista no List Service e a adaptação das aplicações cliente ao novo contrato de versão. Este desafio transversal exigiu alterações coordenadas entre backend e frontend, bem como testes que validassem não só o comportamento isolado da API, mas também a experiência do utilizador perante conflitos de atualização.
 
 \textbf{Localização e contexto de compra.} A funcionalidade de apresentação de preços próximos depende da localização do dispositivo, o que acrescenta valor à decisão do utilizador sem exigir um modelo geográfico pesado no servidor. O sistema pede permissão quando necessário e usa essa informação apenas para ordenar e contextualizar resultados.
 

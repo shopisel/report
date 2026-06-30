@@ -16,10 +16,11 @@ Os serviços com cobertura de testes de integração são:
 \begin{itemize}
     \item \textbf{List Service} (\texttt{ListService.Tests});
     \item \textbf{Products Service} (\texttt{ProductService.Tests});
-    \item \textbf{Prices Service} (\texttt{PricesService.Tests}).
+    \item \textbf{Prices Service} (\texttt{PricesService.Tests});
+    \item \textbf{Account Service} (\texttt{AccountService.Tests}), cobrindo sincronização de conta, favoritos e registo de tokens de push.
 \end{itemize}
 
-O \textbf{Account Service} possui testes de integração dedicados, cobrindo sincronização de conta, favoritos e registo de tokens de push. O \textbf{Stores Service} tem um projeto de testes criado, mas o seu conjunto de casos é mais reduzido do que o dos restantes serviços centrais. Na prática, isso significa que a cobertura automatizada está mais madura nos domínios onde existe mais lógica de negócio, enquanto os serviços mais simples são validados sobretudo de forma funcional. Ambos são também exercitados indiretamente durante a validação funcional descrita na Secção~\ref{sec:6.5}.
+O \textbf{Stores Service} tem um projeto de testes criado, mas o seu conjunto de casos é mais reduzido do que o dos restantes serviços centrais. Na prática, isso significa que a cobertura automatizada está mais madura nos domínios onde existe mais lógica de negócio, enquanto os serviços mais simples são validados sobretudo de forma funcional. Ambos os grupos são também exercitados indiretamente durante a validação funcional descrita na Secção~\ref{sec:6.5}.
 
 A análise estática de código realizada pelo SonarCloud nas pipelines de \ac{CI/CD} complementa os testes automatizados, reportando métricas de qualidade, vulnerabilidades e cobertura de código para os serviços que possuem projetos de teste.
 
@@ -89,7 +90,7 @@ O teste \texttt{GetAll\_ReturnsOnlyListsFromAuthenticatedUser} verifica que o en
 \subsection{Conflito de concorrência}
 \label{sec:6.3.4}
 
-O teste \texttt{Update\_WithStaleVersion\_ReturnsConflict} valida o mecanismo de concorrência optimista quando duas atualizações concorrem sobre a mesma lista:
+O teste \texttt{Update\_WithStaleVersion\_ReturnsConflict} valida o mecanismo de concorrência otimista quando duas atualizações concorrem sobre a mesma lista:
 
 \begin{enumerate}
     \item Cria uma lista e regista a versão devolvida na resposta;

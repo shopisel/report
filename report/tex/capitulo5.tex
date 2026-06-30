@@ -23,11 +23,10 @@ Os repositórios principais do projeto são:
     \item \texttt{scraper-continente} — scraper do website Continente;
     \item \texttt{scraper-pingodoce} — scraper do website Pingo Doce;
     \item \texttt{scraper-orchestrator} — orchestrator dos scrapers via GitHub Actions;
-    \item \texttt{frontend} — aplicação web React;
+    \item \texttt{frontend-web} — aplicação web React;
     \item \texttt{frontend-mobile} — aplicação móvel React Native / Expo;
     \item \texttt{deploy} — configuração de infraestrutura e gateway Nginx;
-    \item \texttt{keycloak} — configuração do servidor Keycloak;
-    \item \texttt{custom-label} — configuração de build e publicação white label da aplicação móvel.
+    \item \texttt{keycloak} — configuração do servidor Keycloak.
 \end{itemize}
 
 \section{Controlo de Versões e Estratégia de Branches}
@@ -47,7 +46,7 @@ Cada repositório de backend inclui uma pipeline de \ac{CI/CD} implementada com 
     \item \textbf{Análise de qualidade}: em alguns serviços, é realizada uma análise estática de código através do SonarCloud, que reporta métricas de qualidade, vulnerabilidades e código duplicado.
     \item \textbf{Construção da imagem Docker}: a imagem Docker do serviço é construída com base no Dockerfile do repositório.
     \item \textbf{Publicação da imagem}: a imagem construída é publicada no GitHub Container Registry (\texttt{ghcr.io/shopisel/<service-name>:latest}), ficando disponível para o processo de deployment.
-    \item \textbf{Deploy automático}: as plataformas de hosting (Render.com e Fly.io) são configuradas para detetar novas versões da imagem e realizar o deployment de forma automática.
+    \item \textbf{Deploy automático}: a plataforma de hosting (Fly.io) é configurada para detetar novas versões da imagem e realizar o deployment de forma automática.
 \end{enumerate}
 
 Para os scrapers, as pipelines incluem uma etapa adicional de execução agendada por cron, que dispara automaticamente o processo de recolha de dados em intervalos regulares, sem necessidade de intervenção manual.
@@ -67,7 +66,7 @@ A Figura~\ref{fig:cicd} ilustra o fluxo geral de \ac{CI/CD} para os serviços de
 \node[pstep, right=0.6cm of build] (sonar)  {Análise\\SonarCloud};
 \node[pstep, right=0.6cm of sonar] (docker) {Build\\Docker};
 \node[pstep, right=0.6cm of docker] (reg)   {Publish\\GHCR};
-\node[pstep, right=0.6cm of reg]   (deploy) {Deploy\\(Render/Fly)};
+\node[pstep, right=0.6cm of reg]   (deploy) {Deploy\\(Fly.io)};
 
 \draw[arr] (push.east)   -- (build.west);
 \draw[arr] (build.east)  -- (sonar.west);
@@ -104,7 +103,7 @@ O desenvolvimento do ShopISEL recorreu a um conjunto de ferramentas complementar
     \item \textbf{SonarCloud}: plataforma de análise estática integrada nas pipelines de \ac{CI/CD}, que reporta métricas de qualidade de código, vulnerabilidades de segurança e cobertura de testes.
     \item \textbf{Docker}: utilizado para containerizar todos os serviços, garantindo reprodutibilidade dos ambientes de desenvolvimento, teste e produção.
     \item \textbf{GitHub Container Registry}: repositório de imagens Docker integrado no GitHub, utilizado para publicar e versionar as imagens de cada serviço.
-    \item \textbf{Render.com e Fly.io}: plataformas de cloud hosting utilizadas para o deployment dos serviços, com suporte nativo a imagens Docker e deployment automático por webhook.
+    \item \textbf{Fly.io}: plataforma de cloud hosting utilizada para o deployment dos serviços, com suporte nativo a imagens Docker e deployment automático por webhook.
 \end{itemize}
 
 \section{Gestão de Configuração e Segredos}
@@ -121,10 +120,10 @@ Esta prática é particularmente relevante para os scrapers, cujos workflows de 
 
 O conceito de white label aplicado ao ShopISEL consiste em disponibilizar a aplicação web sob diferentes identidades visuais — nome, slogan, logótipo e esquema de cores — adaptadas a contextos de retalho ou parceiros comerciais distintos, sem manter bases de código separadas nem alterar manualmente ficheiros de configuração no repositório.
 
-A solução adoptada no repositório \texttt{frontend-web} baseia-se na injecção de parâmetros de marca em tempo de \textit{build}, acoplando três camadas do processo de entrega: GitHub Actions, Docker e Vite. O workflow de publicação da imagem Docker foi estendido para suportar execução manual (\texttt{workflow\_dispatch}), permitindo introduzir seis parâmetros opcionais — nome da marca, slogan, slogan da barra lateral, URL do logótipo e cores primária e secundária. Quando o workflow é disparado automaticamente por integração contínua no branch principal, estes parâmetros ficam vazios e a aplicação assume a identidade Shopisel por defeito.
+A solução adotada no repositório \texttt{frontend-web} baseia-se na injeção de parâmetros de marca em tempo de \textit{build}, acoplando três camadas do processo de entrega: GitHub Actions, Docker e Vite. O workflow de publicação da imagem Docker foi estendido para suportar execução manual (\texttt{workflow\_dispatch}), permitindo introduzir seis parâmetros opcionais — nome da marca, slogan, slogan da barra lateral, URL do logótipo e cores primária e secundária. Quando o workflow é disparado automaticamente por integração contínua no branch principal, estes parâmetros ficam vazios e a aplicação assume a identidade Shopisel por defeito.
 
 Durante a construção da imagem, os valores recebidos são passados como argumentos de \textit{build} do Docker e convertidos em variáveis de ambiente com o prefixo \texttt{VITE\_}. O Vite, ferramenta de \textit{build} do frontend, incorpora estas variáveis de forma estática no \textit{bundle} JavaScript final, substituindo as referências no código-fonte no momento da compilação. Um módulo de configuração central resolve os valores finais da marca, aplicando \textit{fallbacks} quando algum parâmetro não é fornecido, e calcula tons complementares a partir das cores base.
 
-Em ambiente de desenvolvimento local, as mesmas variáveis podem ser definidas num ficheiro de ambiente, embora seja necessário reiniciar o servidor de desenvolvimento após alterações, uma vez que a injecção do Vite ocorre no arranque. Para valores hexadecimais de cor, estes devem ser colocados entre aspas no ficheiro local, dado que o carácter \texttt{\#} seria interpretado como início de comentário pelo \textit{parser} de variáveis de ambiente.
+Em ambiente de desenvolvimento local, as mesmas variáveis podem ser definidas num ficheiro de ambiente, embora seja necessário reiniciar o servidor de desenvolvimento após alterações, uma vez que a injeção do Vite ocorre no arranque. Para valores hexadecimais de cor, estes devem ser colocados entre aspas no ficheiro local, dado que o carácter \texttt{\#} seria interpretado como início de comentário pelo \textit{parser} de variáveis de ambiente.
 
-O resultado desta abordagem é um modelo de \textit{deployment} sem alteração de código: um gestor ou operador pode activar uma nova variante de marca executando manualmente o workflow de publicação com os parâmetros desejados, produzindo uma imagem Docker pronta para implantação. Toda a infraestrutura de testes, construção e entrega existente é reutilizada, e o código-fonte permanece centrado na funcionalidade da aplicação e na marca por defeito.
+O resultado desta abordagem é um modelo de \textit{deployment} sem alteração de código: um gestor ou operador pode ativar uma nova variante de marca executando manualmente o workflow de publicação com os parâmetros desejados, produzindo uma imagem Docker pronta para implantação. Toda a infraestrutura de testes, construção e entrega existente é reutilizada, e o código-fonte permanece centrado na funcionalidade da aplicação e na marca por defeito.
