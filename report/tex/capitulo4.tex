@@ -395,11 +395,21 @@ O fluxo completo de personalização percorre o pipeline de \ac{CI/CD}: o workfl
 
 A aplicação móvel é desenvolvida em React Native com o framework Expo, permitindo uma única base de código para Android e iOS. O Expo Router organiza a navegação por ficheiros e separa o fluxo principal em cinco separadores: \textit{Home}, \textit{Lists}, \textit{Scan}, \textit{Prices} e \textit{Profile}. Para além destes separadores, existem ainda ecrãs dedicados a \textit{Onboarding}, \textit{Auth} e \textit{Alerts}, que são apresentados no \textit{stack} principal da aplicação.
 
-O ecrã de leitura de códigos de barras é um dos pontos mais práticos da experiência móvel. A aplicação usa a câmara do dispositivo para capturar o código, extrai o identificador e consulta o serviço de produtos através do endpoint \texttt{/products/qrCode}, permitindo localizar o produto ou sugerir alternativas relacionadas. Esta abordagem mantém o fluxo simples: apontar a câmara, identificar o produto e avançar diretamente para a sua adição a uma lista ou comparação de preços.
+\subsection{Leitura de QR code}
+\label{sec:4.6.1}
 
-Quando o código lido corresponde a um \ac{EAN} e não existe informação suficientemente rica no catálogo local, a aplicação recorre ao serviço público Open Food Facts através do endereço \url{https://world.openfoodfacts.org/api/v0/product/{ean}.json}~\cite{openfoodfacts-api}. O pedido devolve dados como o nome do produto, marcas, categorias e etiquetas, que são usados para construir uma lista de palavras-chave mais útil para o backend. Nesse momento, a app envia ao endpoint \texttt{/products/qrCode} um corpo \ac{JSON} com dois campos: \texttt{barcode}, com o código lido, e \texttt{keywords}, com as palavras-chave extraídas do Open Food Facts. Isto permite que o backend tente primeiro uma correspondência exata e, caso não exista, procure produtos relacionados~\cite{gs1-ean-upc}.
+O ecrã de leitura de QR code é um dos pontos mais práticos da experiência móvel. A aplicação usa a câmara do dispositivo para capturar o código, extrai o identificador e complementa a informação do produto com o serviço público Open Food Facts quando o catálogo local não é suficiente. De seguida, envia ao endpoint \texttt{/products/qrCode} um corpo \ac{JSON} com o \texttt{barcode} lido e as \texttt{keywords} obtidas a partir dos dados complementares, permitindo ao backend tentar primeiro uma correspondência exata e, se necessário, devolver produtos relacionados~\cite{gs1-ean-upc,openfoodfacts-api}.
 
-A componente de preços próximos utiliza o módulo de localização do Expo para obter a posição do utilizador e ordena os resultados em função da distância quando existem coordenadas disponíveis. O objetivo não é criar um sistema de georreferenciação complexo no servidor, mas sim aproveitar a localização do dispositivo para dar contexto à consulta de preços e tornar a informação mais útil no momento da compra.
+O fluxo implementado distingue três resultados distintos no ecrã de scan: produto encontrado, apenas produtos relacionados e nenhum resultado. Quando existe um produto exato, a aplicação apresenta a ação de adicionar à lista, abre uma modal para escolher a lista de destino e guarda o produto lido localmente para que possa ser reutilizado no separador \textit{Prices} quando não exista \texttt{productId} na rota. Quando surgem apenas produtos relacionados, estes são apresentados como itens clicáveis, sem botões adicionais desnecessários. Se não for encontrado qualquer resultado, o utilizador recebe uma mensagem de falha e pode tentar novamente ou pesquisar manualmente pelo nome do produto.
+
+Este fluxo pede autorização explícita para aceder à câmara quando o ecrã de scan é aberto e a permissão ainda não foi concedida. A interface apresenta um estado próprio de permissões e só ativa a leitura depois de o utilizador autorizar o acesso, garantindo que o scan funciona de forma controlada e transparente.
+
+\subsection{Localização e preços próximos}
+\label{sec:4.6.2}
+
+A componente de preços próximos utiliza o módulo de localização do Expo para obter a posição do utilizador e ordenar os resultados em função da distância quando existem coordenadas disponíveis. O objetivo não é criar um sistema de georreferenciação complexo no servidor, mas sim aproveitar a localização do dispositivo para dar contexto à consulta de preços e destacar as lojas mais próximas no momento da compra.
+
+A obtenção da localização também depende de autorização do utilizador: o \textit{hook} de localização pede permissão em \textit{foreground} antes de obter e acompanhar a posição atual. Quando a permissão é recusada, a aplicação mostra essa limitação de forma explícita e continua a funcionar, apenas sem ordenar os preços por proximidade.
 
 A organização do código fonte por domínio funcional facilita a manutenção e a extensão da aplicação:
 \begin{itemize}
