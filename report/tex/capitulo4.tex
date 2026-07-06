@@ -79,6 +79,8 @@ Os pedidos das aplicações cliente chegam ao sistema através de um gateway Ngi
 
 A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue Service processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
 
+Por uma questão de foco, a Figura~\ref{fig:pipeline} representa apenas os componentes de execução e o fluxo de dados entre eles. O mecanismo que desencadeia cada etapa — workflows de GitHub Actions que invocam os scrapers e, de seguida, o MatchQueue Service e o FCM Notification Worker através de eventos \texttt{repository\_dispatch} — não é um componente de runtime e não está representado no diagrama; a orquestração completa é descrita na Secção~\ref{sec:5.4}.
+
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
@@ -277,16 +279,25 @@ Os endpoints expostos são:
 \subsection{MatchQueue Service}
 \label{sec:4.2.6}
 
-O MatchQueue Service é um componente worker que é executado após a conclusão dos scrapers, recebendo os dados de staging do MongoDB, normalizando-os e integrando-os na base de dados relacional.
+O MatchQueue Service é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema, sendo executado após a conclusão dos scrapers para normalizar os dados de staging e integrá-los na base de dados relacional.
 
-Este serviço é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
+Este serviço é implementado como uma única aplicação ASP.NET Core, mas suporta dois modos de execução distintos, selecionados através de um argumento de linha de comandos (\texttt{-{}-mode worker}):
+
+\begin{itemize}
+    \item \textbf{Modo serviço} (por omissão): a aplicação é publicada como imagem Docker e mantém-se sempre ativa, expondo o endpoint \texttt{POST /matchqueue/trigger}, que um scraper pode invocar via \ac{HTTP} para desencadear o processamento (opção configurada por variável de ambiente);
+    \item \textbf{Modo worker} (\texttt{-{}-mode worker}): a mesma aplicação é compilada e executada diretamente num \textit{runner} efémero do GitHub Actions, sem publicação de imagem Docker nem endpoint \ac{HTTP} exposto. Neste modo, o processo lê o \textit{payload} do evento \texttt{repository\_dispatch} recebido do Scraper Orchestrator e invoca internamente a mesma lógica de negócio do endpoint de \textit{trigger}, terminando após a conclusão.
+\end{itemize}
+
+Os dois modos partilham a mesma lógica de negócio, variando apenas a forma como são invocados e o ciclo de vida do processo: o modo serviço mantém-se permanentemente disponível, enquanto o modo worker segue um modelo \textit{run-to-completion}, orquestrado inteiramente pelo GitHub Actions. É este segundo modo, e não o endpoint \ac{HTTP}, que é utilizado no fluxo principal da Figura~\ref{fig:pipeline}.
+
+O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
 
 \begin{itemize}
     \item \textbf{FavoriteProductEntity}: regista os produtos favoritos de cada utilizador, utilizados para determinar quais as notificações de descida de preço a enviar;
     \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
 \end{itemize}
 
-O serviço é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações sem expor um modo \texttt{API} dedicado.
+Após a conclusão do processamento em modo worker, o próprio workflow do MatchQueue Service disponibiliza um evento \texttt{repository\_dispatch} (\texttt{matchqueue\_finished}) para o repositório \texttt{fcm-notification-worker}, encadeando a normalização e o envio de notificações sem necessidade de um agendamento independente.
 
 \section{Pipeline de Recolha de Dados}
 \label{sec:4.3}
@@ -342,7 +353,7 @@ Esta abordagem permite executar os scrapers em paralelo, aguardar a conclusão d
 \section{FCM Notification Worker}
 \label{sec:4.4}
 
-O FCM Notification Worker é uma aplicação .NET de execução pontual (run-to-completion), concebida para ser invocada periodicamente pelo orchestrator de GitHub Actions. O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
+O FCM Notification Worker é uma aplicação .NET de execução pontual (\textit{run-to-completion}): ao contrário dos serviços de backend, não possui imagem Docker nem deployment persistente, sendo antes compilada e executada diretamente num \textit{runner} do GitHub Actions sempre que recebe o evento \texttt{repository\_dispatch} disponibilizado automaticamente pelo workflow do MatchQueue Service ao concluir o seu processamento (podendo também ser executada manualmente). O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
 
 \begin{enumerate}
     \item Inicializa o cliente Firebase com as credenciais codificadas em Base64 (provenientes de variável de ambiente);
