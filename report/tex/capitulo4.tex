@@ -163,12 +163,12 @@ Todos os serviços de backend são desenvolvidos em ASP.NET Core com Minimal \ac
 \subsection{List Service}
 \label{sec:4.2.1}
 
-O List Service é o serviço central do ShopISEL no que diz respeito à interação do utilizador. Gere a criação, consulta, atualização e eliminação de listas de compras, bem como os itens que as compõem.
+O List Service é o serviço central do ShopISEL no que diz respeito à interação do utilizador. Gere a criação, consulta, atualização e eliminação de listas de compras, bem como a coleção de itens associada a cada lista.
 
 O modelo de dados do List Service é composto por duas entidades principais:
 
 \begin{itemize}
-    \item \textbf{ShoppingListEntity}: representa uma lista de compras, com um identificador único, o identificador do proprietário (\texttt{OwnerId}, derivado do claim \texttt{sub} do token \ac{JWT}), o nome da lista, a data de criação e um token de versão (\texttt{Version}) utilizado para controlo de concorrência otimista.
+    \item \textbf{ShoppingListEntity}: representa uma lista de compras, com um identificador único, o identificador do proprietário (\texttt{OwnerId}, obtido a partir do claim \texttt{sub} do token \ac{JWT}; neste contexto, um \textit{claim} é uma afirmação codificada no token que transporta atributos do utilizador autenticado), o nome da lista, a data de criação e um token de versão (\texttt{Version}) utilizado para controlo de concorrência otimista.
     \item \textbf{ShoppingListItemEntity}: representa um item da lista, com referência ao identificador do produto (\texttt{ProductId}), ao identificador da loja (\texttt{StoreId}), à quantidade desejada e ao estado de marcação (\texttt{Checked}).
 \end{itemize}
 
@@ -180,13 +180,13 @@ Os endpoints expostos são:
 
 \begin{itemize}
     \item \texttt{GET /lists} — devolve todas as listas do utilizador autenticado;
-    \item \texttt{POST /lists} — cria uma nova lista com os itens fornecidos;
+    \item \texttt{POST /lists} — cria uma nova lista com a coleção completa de itens fornecida;
     \item \texttt{GET /lists/\{listId\}} — devolve uma lista específica (apenas se pertencer ao utilizador autenticado);
-    \item \texttt{PUT /lists/\{listId\}} — atualiza o nome e os itens de uma lista, exigindo o header \texttt{If-Match} com a versão esperada;
+    \item \texttt{PUT /lists/\{listId\}} — atualiza o nome e a coleção completa de itens de uma lista, exigindo o header \texttt{If-Match} com a versão esperada;
     \item \texttt{DELETE /lists/\{listId\}} — elimina uma lista, também condicionada ao header \texttt{If-Match}.
 \end{itemize}
 
-As respostas de criação e consulta incluem o campo \texttt{version} no corpo e o header \texttt{ETag}, permitindo às aplicações cliente conhecerem a versão corrente antes de qualquer operação de escrita.
+As respostas de criação e consulta incluem o campo \texttt{version} no corpo e o header \texttt{ETag}, permitindo às aplicações cliente conhecerem a versão corrente antes de qualquer operação de escrita. Este campo é a base do mecanismo de concorrência otimista adotado no serviço: cada atualização bem-sucedida produz uma nova versão, e qualquer pedido baseado numa versão desatualizada é rejeitado.
 
 O serviço inclui também um endpoint de saúde em \texttt{GET /health}, utilizado pelos mecanismos de monitorização da plataforma de deploy.
 
@@ -195,7 +195,7 @@ O serviço inclui também um endpoint de saúde em \texttt{GET /health}, utiliza
 
 O List Service expõe operações de escrita sobre listas que podem ser invocadas em simultâneo a partir de diferentes clientes — por exemplo, quando o mesmo utilizador edita a mesma lista na aplicação web e na aplicação móvel. Sem mecanismos de proteção, a segunda escrita poderia sobrescrever alterações feitas entretanto pelo primeiro cliente, originando perda silenciosa de dados (\textit{lost updates}).
 
-Para resolver este problema, foi adotada uma estratégia de concorrência otimista. Cada lista possui um identificador de versão do tipo \texttt{Guid}, gerido pela aplicação e persistido na base de dados como token de concorrência do Entity Framework Core. Sempre que uma lista é criada ou atualizada com sucesso, recebe uma nova versão; nas operações de atualização e eliminação, o serviço compara a versão recebida no header \texttt{If-Match} com a versão atualmente armazenada. Se coincidirem, a operação prossegue; se outro cliente tiver alterado a lista entretanto, o Entity Framework Core deteta o conflito e a API responde com o código HTTP 409 (\textit{Conflict}).
+Para resolver este problema, foi adotada uma estratégia de concorrência otimista, seguindo o princípio descrito por King~\cite{king-optimistic-concurrency}. Cada lista possui um identificador de versão do tipo \texttt{Guid}, gerido pela aplicação e persistido na base de dados como token de concorrência do Entity Framework Core. Sempre que uma lista é criada ou atualizada com sucesso, recebe uma nova versão; nas operações de atualização e eliminação, o serviço compara a versão recebida no header \texttt{If-Match} com a versão atualmente armazenada. Se coincidirem, a operação prossegue; se outro cliente tiver alterado a lista entretanto, o Entity Framework Core deteta o conflito e a API responde com o código HTTP 409 (\textit{Conflict}).
 
 Esta abordagem foi preferida a alternativas como \textit{rowversion} específico de SQL Server, o token nativo \texttt{xmin} do PostgreSQL ou locking pessimista com transações longas. A opção escolhida mantém o comportamento portável entre PostgreSQL, utilizado em produção, e SQLite, utilizado nos testes de integração, sem bloquear recursos de base de dados enquanto o utilizador interage com a interface.
 

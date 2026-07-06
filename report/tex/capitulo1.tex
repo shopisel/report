@@ -2,7 +2,7 @@
 
 \chapter{Introdução}
 
-O ShopISEL é uma plataforma digital de apoio ao planeamento de compras, que centraliza informação de produtos e preços de múltiplas insígnias de retalho. A plataforma permite criar e gerir listas de compras, comparar preços entre lojas, receber alertas de descida de preço e identificar as opções mais vantajosas com base na localização do utilizador. A solução é disponibilizada através de uma aplicação móvel, orientada ao contexto real de compra, e de uma aplicação web, para preparação e análise num ambiente mais confortável.
+O ShopISEL é uma plataforma digital de apoio ao planeamento de compras, que centraliza informação de produtos e preços de múltiplas insígnias de retalho. A plataforma permite criar e gerir listas de compras, comparar preços entre lojas, receber alertas de descida de preço e identificar as opções mais vantajosas com base na localização do utilizador. A solução é disponibilizada através de uma aplicação móvel, orientada ao contexto real de compra, e de uma aplicação web, para preparação e análise em computador.
 
 \section{Contexto e Motivação}
 \label{sec:1.1}
@@ -14,7 +14,7 @@ O ShopISEL procura colmatar esta lacuna, combinando gestão de listas, comparaç
 \section{Abordagem}
 \label{sec:1.2}
 
-A solução segue uma arquitetura orientada a serviços, com o backend dividido em serviços independentes por domínio (listas, produtos, preços, lojas, contas), expostos através de \ac{API}s REST. A recolha automática de dados é assegurada por scrapers dedicados por insígnia, sem dependência de \ac{API}s proprietárias. A autenticação é centralizada no Keycloak, e as notificações push são entregues via Firebase Cloud Messaging. Todo o sistema é containerizado com Docker e suportado por pipelines de \ac{CI/CD} com GitHub Actions.
+A solução segue uma arquitetura orientada a serviços, com o backend dividido em serviços independentes por domínio (listas, produtos, preços, lojas, contas de utilizador), expostos através de \ac{API}s REST. A recolha automática de dados é assegurada por scrapers dedicados por insígnia, sem dependência de \ac{API}s proprietárias. A autenticação é centralizada no Keycloak, e as notificações push são entregues via Firebase Cloud Messaging. Todo o sistema é containerizado com Docker e suportado por pipelines de \ac{CI/CD} com GitHub Actions.
 
 \section{Objetivos}
 \label{sec:1.3}
@@ -42,7 +42,7 @@ Os objetivos principais do projeto ShopISEL são:
     \item O sistema deve notificar o utilizador quando o preço de um produto favorito descer;
     \item O sistema deve suportar a identificação de produtos por leitura de código de barras;
     \item O sistema deve apresentar lojas ordenadas por proximidade geográfica;
-    \item O sistema deve autenticar e autorizar utilizadores, garantindo isolamento de dados entre contas;
+    \item O sistema deve autenticar e autorizar utilizadores, garantindo isolamento de dados entre contas de utilizador;
     \item O sistema deve recolher automaticamente dados de produtos e preços sem dependência de \ac{API}s proprietárias.
 \end{enumerate}
 

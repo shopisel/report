@@ -12,7 +12,7 @@ O ShopISEL partiu de uma necessidade concreta dos consumidores: organizar compra
 
 Em termos funcionais, a plataforma já cobre os fluxos principais do projeto: gestão de listas, consulta de preços, alertas de descida de preço, leitura de códigos de barras e apresentação de preços com base na localização do utilizador quando aplicável. Estes elementos mostram que o sistema não ficou apenas pela ideia inicial, mas evoluiu para um conjunto de funcionalidades utilizáveis em contexto real.
 
-Do ponto de vista técnico, o maior desafio não foi apenas implementar ecrãs ou endpoints, mas ligar dados heterogéneos, autenticação centralizada, notificação push e sincronização entre serviços sem perder simplicidade de utilização.
+Do ponto de vista técnico, o maior desafio não foi apenas implementar ecrãs ou endpoints, mas ligar informação proveniente de fontes com estruturas, formatos e níveis de detalhe distintos, com autenticação centralizada, notificação push e sincronização entre serviços sem perder simplicidade de utilização.
 
 Os principais componentes desenvolvidos foram:
 
@@ -48,8 +48,10 @@ O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em vária
 \section{Considerações Finais}
 \label{sec:8.3}
 
-O projeto ShopISEL demonstra que é possível, com tecnologias modernas e práticas de engenharia de software bem estabelecidas, construir uma plataforma digital de qualidade que responde a uma necessidade real dos consumidores. A combinação de uma arquitetura orientada a serviços, recolha automática de dados, autenticação centralizada, notificações push e interfaces nativas para web e mobile resulta num sistema coerente, extensível e pronto para evolução.
+O projeto ShopISEL demonstra que é possível construir uma plataforma digital funcional e coerente com base em práticas de engenharia de software, mas também evidencia limites concretos do processo seguido. Adoptaram-se decomposição por serviços, contratos explícitos entre componentes, contentorização, \ac{CI/CD}, testes de integração e revisão iterativa das funcionalidades, o que ajudou a manter o sistema evolutivo e verificável.
 
-A adoção de práticas de \ac{CI/CD}, containerização e deployment declarativo garante que o sistema pode ser evoluído e entregue com confiança, mantendo a qualidade e a consistência ao longo do ciclo de vida do produto.
+Ainda assim, o desenvolvimento não correspondeu a um processo A-SDLC completo, tal como enquadrado por Bhati~\cite{bhati-asdlc-2026}. Não houve delegação autónoma de tarefas de ponta a ponta a agentes, nem um sistema formal de governação com registo sistemático de decisões, validação de cada passo por agentes especializados e controlo contínuo do contexto. O uso de LLMs foi sobretudo assistivo, apoiando implementação, refinamento e validação pontual.
+
+Esta distinção é importante: o valor do projeto está menos na adesão total a um paradigma agentic e mais na combinação pragmática entre desenvolvimento orientado por humanos, automação de entrega e apoio pontual por IA. Em comparação com uma abordagem A-SDLC mais madura, o trabalho ainda fica aquém de práticas como orquestração autónoma de tarefas, verificação sistemática multiagente e rastreabilidade completa das decisões assistidas por IA.
 
 Em suma, o ShopISEL representa um primeiro passo sólido para uma plataforma de apoio à decisão de compra que, com as direções de evolução apresentadas no Capítulo~\ref{chap:7}, tem potencial para se tornar uma ferramenta genuinamente útil no quotidiano dos consumidores portugueses.
