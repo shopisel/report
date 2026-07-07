@@ -244,7 +244,7 @@ Os endpoints expostos são:
 \begin{itemize}
     \item \texttt{GET /prices?productId=\{id\}} — devolve os preços de um produto em todas as lojas disponíveis;
     \item \texttt{GET /prices?productId=\{id\}\&storeId=\{id\}} — devolve o preço de um produto numa loja específica;
-    \item \texttt{POST /prices} — regista ou atualiza o preço de um produto numa loja (utilizado internamente pelo MatchQueue);
+    \item \texttt{POST /prices} — regista ou atualiza o preço de um produto numa loja (utilizado internamente pelo pipeline de recolha de dados);
     \item \texttt{GET /health} — endpoint de monitorização.
 \end{itemize}
 
@@ -276,36 +276,20 @@ Os endpoints expostos são:
     \item \texttt{POST /accounts/me/push-tokens} — regista ou atualiza o token FCM do dispositivo.
 \end{itemize}
 
-\subsection{MatchQueue}
-\label{sec:4.2.6}
-
-O MatchQueue é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema, sendo executado após a conclusão dos scrapers para normalizar os dados de staging e integrá-los na base de dados relacional.
-
-Este serviço é implementado como uma única aplicação ASP.NET Core, mas suporta dois modos de execução distintos, selecionados através de um argumento de linha de comandos (\texttt{-{}-mode worker}):
-
-\begin{itemize}
-    \item \textbf{Modo serviço} (por omissão): a aplicação é publicada como imagem Docker e mantém-se sempre ativa, expondo o endpoint \texttt{POST /matchqueue/trigger}, que um scraper pode invocar via \ac{HTTP} para desencadear o processamento (opção configurada por variável de ambiente);
-    \item \textbf{Modo worker} (\texttt{-{}-mode worker}): a mesma aplicação é compilada e executada diretamente num \textit{runner} efémero do GitHub Actions, sem publicação de imagem Docker nem endpoint \ac{HTTP} exposto. Neste modo, o processo lê o \textit{payload} do evento \texttt{repository\_dispatch} recebido do Scraper Orchestrator e invoca internamente a mesma lógica de negócio do endpoint de \textit{trigger}, terminando após a conclusão.
-\end{itemize}
-
-Os dois modos partilham a mesma lógica de negócio, variando apenas a forma como são invocados e o ciclo de vida do processo: o modo serviço mantém-se permanentemente disponível, enquanto o modo worker segue um modelo \textit{run-to-completion}, orquestrado inteiramente pelo GitHub Actions. É este segundo modo, e não o endpoint \ac{HTTP}, que é utilizado no fluxo principal da Figura~\ref{fig:pipeline}.
-
-O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
-
-\begin{itemize}
-    \item \textbf{FavoriteProductEntity}: regista os produtos favoritos de cada utilizador, utilizados para determinar quais as notificações de descida de preço a enviar;
-    \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
-\end{itemize}
-
-Após a conclusão do processamento em modo worker, o próprio workflow do MatchQueue disponibiliza um evento \texttt{repository\_dispatch} (\texttt{matchqueue\_finished}) para o repositório \texttt{fcm-notification-worker}, encadeando a normalização e o envio de notificações sem necessidade de um agendamento independente.
-
 \section{Pipeline de Recolha de Dados}
 \label{sec:4.3}
 
-A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. Como se pode ver na Figura~\ref{fig:pipeline}, o fluxo começa nos scrapers e termina na entrega de notificações.
+A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. Como se pode ver na Figura~\ref{fig:pipeline}, o fluxo é iniciado pelo \textit{Scraper Orchestrator}, segue para os scrapers e termina no \textit{MatchQueue} e na entrega de notificações.
+
+\subsection{Scraper Orchestrator}
+\label{sec:4.3.1}
+
+O Scraper Orchestrator é um repositório de workflows de GitHub Actions responsável por coordenar a execução dos scrapers de múltiplas insígnias. Cada scraper expõe um workflow reutilizável (\textit{reusable workflow}), que pode ser invocado pelo orchestrator através do mecanismo \texttt{workflow\_call}.
+
+Esta abordagem permite executar os scrapers em paralelo, aguardar a conclusão de todos eles e, de seguida, desencadear o processamento do MatchQueue. A adição de um novo scraper para uma insígnia adicional requer apenas a referência ao seu workflow reutilizável no orchestrator, sem necessidade de alterar os scrapers existentes.
 
 \subsection{Scraper Continente}
-\label{sec:4.3.1}
+\label{sec:4.3.2}
 
 O Scraper Continente é uma aplicação .NET que utiliza o Playwright para navegar automaticamente no website do Continente e extrair informação de produtos por categoria. O Playwright permite controlar um browser real, sendo adequado para páginas com conteúdo renderizado dinamicamente no cliente, como é o caso do website do Continente~\cite{playwright-docs}.
 
@@ -322,7 +306,7 @@ A estrutura do scraper divide as responsabilidades em módulos distintos:
 \end{itemize}
 
 \subsection{Scraper Pingo Doce}
-\label{sec:4.3.2}
+\label{sec:4.3.3}
 
 O Scraper Pingo Doce segue a mesma abordagem baseada em Playwright, adaptada à estrutura do website do Pingo Doce. Adicionalmente, suporta dois modos de execução:
 
@@ -343,12 +327,16 @@ Após a conclusão da sincronização com o MongoDB, o scraper pode opcionalment
 
 O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (cron), lendo as credenciais de acesso ao MongoDB a partir de segredos do repositório.
 
-\subsection{Scraper Orchestrator}
-\label{sec:4.3.3}
+\subsection{MatchQueue}
+\label{sec:4.3.4}
 
-O Scraper Orchestrator é um repositório de workflows de GitHub Actions responsável por coordenar a execução dos scrapers de múltiplas insígnias. Cada scraper expõe um workflow reutilizável (\textit{reusable workflow}), que pode ser invocado pelo orchestrator através do mecanismo \texttt{workflow\_call}.
-
-Esta abordagem permite executar os scrapers em paralelo, aguardar a conclusão de todos eles e, de seguida, desencadear o processamento do MatchQueue. A adição de um novo scraper para uma insígnia adicional requer apenas a referência ao seu workflow reutilizável no orchestrator, sem necessidade de alterar os scrapers existentes.
+O MatchQueue Service é um componente worker que é executado após a conclusão dos scrapers, recebendo os dados de staging do MongoDB, normalizando-os e integrando-os na base de dados relacional.
+Este serviço é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
+\begin{itemize}
+    \item \textbf{FavoriteProductEntity}: regista os produtos favoritos de cada utilizador, utilizados para determinar quais as notificações de descida de preço a enviar;
+    \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
+\end{itemize}
+O serviço é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações sem expor um modo API dedicado.
 
 \section{FCM Notification Worker}
 \label{sec:4.4}
