@@ -77,9 +77,9 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 
 Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend partilham uma única base de dados PostgreSQL, na qual cada serviço gere a sua própria tabela, e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
 
-A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue Service processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
+A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
 
-Por uma questão de foco, a Figura~\ref{fig:pipeline} representa apenas os componentes de execução e o fluxo de dados entre eles. O mecanismo que desencadeia cada etapa — workflows de GitHub Actions que invocam os scrapers e, de seguida, o MatchQueue Service e o FCM Notification Worker através de eventos \texttt{repository\_dispatch} — não é um componente de runtime e não está representado no diagrama; a orquestração completa é descrita na Secção~\ref{sec:5.4}.
+Por uma questão de foco, a Figura~\ref{fig:pipeline} representa apenas os componentes de execução e o fluxo de dados entre eles. O mecanismo que desencadeia cada etapa — workflows de GitHub Actions que invocam os scrapers e, de seguida, o MatchQueue e o FCM Notification Worker através de eventos \texttt{repository\_dispatch} — não é um componente de runtime e não está representado no diagrama; a orquestração completa é descrita na Secção~\ref{sec:5.4}.
 
 \begin{figure}[H]
 \centering
@@ -102,7 +102,7 @@ Por uma questão de foco, a Figura~\ref{fig:pipeline} representa apenas os compo
 \node[service, right=of orch] (sc-pd) {Scraper\\Pingo Doce};
 
 \node[db, below=1.0cm of orch] (mongo) {MongoDB};
-\node[service, right=1.35cm of mongo] (mq) {MatchQueue\\Service};
+\node[service, right=1.35cm of mongo] (mq) {MatchQueue};
 \node[service, right=of mq] (fcmw) {FCM\\Worker};
 \node[ext, right=1.35cm of fcmw] (fcm) {Firebase\\FCM};
 \node[db, below=1.0cm of $(mq)!0.5!(fcmw)$] (pg) {PostgreSQL};
@@ -244,7 +244,7 @@ Os endpoints expostos são:
 \begin{itemize}
     \item \texttt{GET /prices?productId=\{id\}} — devolve os preços de um produto em todas as lojas disponíveis;
     \item \texttt{GET /prices?productId=\{id\}\&storeId=\{id\}} — devolve o preço de um produto numa loja específica;
-    \item \texttt{POST /prices} — regista ou atualiza o preço de um produto numa loja (utilizado internamente pelo MatchQueue Service);
+    \item \texttt{POST /prices} — regista ou atualiza o preço de um produto numa loja (utilizado internamente pelo MatchQueue);
     \item \texttt{GET /health} — endpoint de monitorização.
 \end{itemize}
 
@@ -276,10 +276,10 @@ Os endpoints expostos são:
     \item \texttt{POST /accounts/me/push-tokens} — regista ou atualiza o token FCM do dispositivo.
 \end{itemize}
 
-\subsection{MatchQueue Service}
+\subsection{MatchQueue}
 \label{sec:4.2.6}
 
-O MatchQueue Service é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema, sendo executado após a conclusão dos scrapers para normalizar os dados de staging e integrá-los na base de dados relacional.
+O MatchQueue é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema, sendo executado após a conclusão dos scrapers para normalizar os dados de staging e integrá-los na base de dados relacional.
 
 Este serviço é implementado como uma única aplicação ASP.NET Core, mas suporta dois modos de execução distintos, selecionados através de um argumento de linha de comandos (\texttt{-{}-mode worker}):
 
@@ -297,7 +297,7 @@ O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categ
     \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
 \end{itemize}
 
-Após a conclusão do processamento em modo worker, o próprio workflow do MatchQueue Service disponibiliza um evento \texttt{repository\_dispatch} (\texttt{matchqueue\_finished}) para o repositório \texttt{fcm-notification-worker}, encadeando a normalização e o envio de notificações sem necessidade de um agendamento independente.
+Após a conclusão do processamento em modo worker, o próprio workflow do MatchQueue disponibiliza um evento \texttt{repository\_dispatch} (\texttt{matchqueue\_finished}) para o repositório \texttt{fcm-notification-worker}, encadeando a normalização e o envio de notificações sem necessidade de um agendamento independente.
 
 \section{Pipeline de Recolha de Dados}
 \label{sec:4.3}
@@ -337,9 +337,9 @@ Os dados são persistidos em MongoDB~\cite{mongodb-docs} em duas coleções:
     \item \texttt{scrape\_products}: um documento por produto por execução, com um identificador estável baseado no URL externo ou numa combinação de categoria e nome.
 \end{itemize}
 
-Esta estratégia de identificação estável permite ao MatchQueue Service detetar alterações de preço entre execuções consecutivas, comparando os valores pelo mesmo identificador de produto.
+Esta estratégia de identificação estável permite ao MatchQueue detetar alterações de preço entre execuções consecutivas, comparando os valores pelo mesmo identificador de produto.
 
-Após a conclusão da sincronização com o MongoDB, o scraper pode opcionalmente disparar o processamento no MatchQueue Service através de um pedido \texttt{POST /matchqueue/trigger}, configurado por variável de ambiente.
+Após a conclusão da sincronização com o MongoDB, o scraper pode opcionalmente disparar o processamento no MatchQueue através de um pedido \texttt{POST /matchqueue/trigger}, configurado por variável de ambiente.
 
 O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (cron), lendo as credenciais de acesso ao MongoDB a partir de segredos do repositório.
 
@@ -348,16 +348,16 @@ O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (
 
 O Scraper Orchestrator é um repositório de workflows de GitHub Actions responsável por coordenar a execução dos scrapers de múltiplas insígnias. Cada scraper expõe um workflow reutilizável (\textit{reusable workflow}), que pode ser invocado pelo orchestrator através do mecanismo \texttt{workflow\_call}.
 
-Esta abordagem permite executar os scrapers em paralelo, aguardar a conclusão de todos eles e, de seguida, desencadear o processamento do MatchQueue Service. A adição de um novo scraper para uma insígnia adicional requer apenas a referência ao seu workflow reutilizável no orchestrator, sem necessidade de alterar os scrapers existentes.
+Esta abordagem permite executar os scrapers em paralelo, aguardar a conclusão de todos eles e, de seguida, desencadear o processamento do MatchQueue. A adição de um novo scraper para uma insígnia adicional requer apenas a referência ao seu workflow reutilizável no orchestrator, sem necessidade de alterar os scrapers existentes.
 
 \section{FCM Notification Worker}
 \label{sec:4.4}
 
-O FCM Notification Worker é uma aplicação .NET de execução pontual (\textit{run-to-completion}): ao contrário dos serviços de backend, não possui imagem Docker nem deployment persistente, sendo antes compilada e executada diretamente num \textit{runner} do GitHub Actions sempre que recebe o evento \texttt{repository\_dispatch} disponibilizado automaticamente pelo workflow do MatchQueue Service ao concluir o seu processamento (podendo também ser executada manualmente). O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
+O FCM Notification Worker é uma aplicação .NET de execução pontual (\textit{run-to-completion}): ao contrário dos serviços de backend, não possui imagem Docker nem deployment persistente, sendo antes compilada e executada diretamente num \textit{runner} do GitHub Actions sempre que recebe o evento \texttt{repository\_dispatch} disponibilizado automaticamente pelo workflow do MatchQueue ao concluir o seu processamento (podendo também ser executada manualmente). O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
 
 \begin{enumerate}
     \item Inicializa o cliente Firebase com as credenciais codificadas em Base64 (provenientes de variável de ambiente);
-    \item Estabelece ligação à base de dados PostgreSQL do MatchQueue Service;
+    \item Estabelece ligação à base de dados PostgreSQL do MatchQueue;
     \item Consulta a tabela \texttt{notification\_enque} para obter notificações pendentes não processadas (\texttt{checked = false}), cruzando com a tabela \texttt{account\_push\_tokens} para obter os tokens FCM ativos dos utilizadores;
     \item Constrói e envia as mensagens push em lotes de 500 (limite imposto pelo Firebase);
     \item Marca as notificações processadas como \texttt{checked = true}.

@@ -35,7 +35,7 @@ Os principais componentes desenvolvidos foram:
 
 O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em várias frentes.
 
-\textbf{Recolha e normalização de dados.} A extração de dados dos websites do Continente e do Pingo Doce revelou-se um processo frágil, dado que as estruturas HTML das páginas podem mudar sem aviso. O uso do Playwright permitiu lidar com páginas de renderização dinâmica, mas a manutenção dos scrapers exige atenção contínua às alterações dos websites fontes. A normalização dos dados provenientes de fontes heterogéneas, com formatos e nomenclaturas distintos, exigiu a criação de uma camada de matching (MatchQueue Service) que identificasse o mesmo produto em diferentes insígnias.
+\textbf{Recolha e normalização de dados.} A extração de dados dos websites do Continente e do Pingo Doce revelou-se um processo frágil, dado que as estruturas HTML das páginas podem mudar sem aviso. O uso do Playwright permitiu lidar com páginas de renderização dinâmica, mas a manutenção dos scrapers exige atenção contínua às alterações dos websites fontes. A normalização dos dados provenientes de fontes heterogéneas, com formatos e nomenclaturas distintos, exigiu a criação de uma camada de matching (MatchQueue) que identificasse o mesmo produto em diferentes insígnias.
 
 \textbf{Isolamento de autenticação em testes.} A integração com o Keycloak é essencial para a segurança do sistema, mas representa um ponto de dependência externa nos testes. A solução encontrada, com a criação de um \texttt{TestAuthHandler} que simula a autenticação em contexto de teste, permite executar testes de integração completos sem necessidade de uma instância Keycloak externa.
 

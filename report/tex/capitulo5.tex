@@ -88,10 +88,10 @@ O repositório \texttt{scraper-orchestrator} contém um workflow, ativado diaria
 \begin{enumerate}
     \item Invoca em paralelo os workflows reutilizáveis de cada scraper;
     \item Aguarda a conclusão de todos os scrapers (\texttt{needs: [...]});
-    \item Despoleta, através de um evento \texttt{repository\_dispatch}, o workflow do MatchQueue Service, que executa a aplicação em modo worker (\texttt{-{}-mode worker}) para normalizar os dados recolhidos.
+    \item Despoleta, através de um evento \texttt{repository\_dispatch}, o workflow do MatchQueue, que executa a aplicação em modo worker (\texttt{-{}-mode worker}) para normalizar os dados recolhidos.
 \end{enumerate}
 
-Ao concluir com sucesso, o workflow do MatchQueue Service disponibiliza, por sua vez, um novo evento \texttt{repository\_dispatch} para o repositório \texttt{fcm-notification-worker}, que compila e executa a aplicação diretamente no \textit{runner}, sem deployment persistente, encaminhando as notificações pendentes para o Firebase Cloud Messaging. Esta cadeia de eventos entre repositórios substitui a necessidade de um agendador central: cada etapa disponibiliza a seguinte apenas quando a anterior é concluída com sucesso.
+Ao concluir com sucesso, o workflow do MatchQueue disponibiliza, por sua vez, um novo evento \texttt{repository\_dispatch} para o repositório \texttt{fcm-notification-worker}, que compila e executa a aplicação diretamente no \textit{runner}, sem deployment persistente, encaminhando as notificações pendentes para o Firebase Cloud Messaging. Esta cadeia de eventos entre repositórios substitui a necessidade de um agendador central: cada etapa disponibiliza a seguinte apenas quando a anterior é concluída com sucesso.
 
 Esta arquitetura de orquestração permite adicionar suporte a uma nova insígnia simplesmente criando um novo repositório de scraper com um workflow reutilizável e referenciando-o no orchestrator, sem modificar nenhum dos scrapers existentes.
 
@@ -115,7 +115,7 @@ A configuração de cada serviço é injetada por variáveis de ambiente, seguin
 
 Os segredos sensíveis (cadeias de ligação a bases de dados, credenciais do Keycloak, credenciais Firebase, tokens de acesso ao MongoDB) são geridos como GitHub Secrets nos repositórios correspondentes, sendo injetados nas pipelines de \ac{CI/CD} e nos ambientes de produção sem exposição no código fonte.
 
-Esta prática é particularmente relevante para os scrapers, cujos workflows de GitHub Actions necessitam de acesso às credenciais do MongoDB e às configurações do MatchQueue Service para funcionar corretamente.
+Esta prática é particularmente relevante para os scrapers, cujos workflows de GitHub Actions necessitam de acesso às credenciais do MongoDB e às configurações do MatchQueue para funcionar corretamente.
 
 \section{Desenvolvimento White Label}
 \label{sec:5.7}
