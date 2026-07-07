@@ -123,7 +123,7 @@ A validação funcional incluiu os seguintes cenários:
     \item \textbf{Leitura de código de barras}: captura pela câmara na aplicação móvel, consulta ao backend e sugestão de produto ou alternativas relacionadas;
     \item \textbf{Georreferenciação}: pedido de localização no dispositivo e ordenação dos resultados por proximidade;
     \item \textbf{Notificações push}: registo do token FCM no arranque da aplicação móvel e receção de alertas de descida de preço;
-    \item \textbf{Pipeline de scraping}: execução dos scrapers, verificação dos dados no MongoDB, processamento pelo componente worker MatchQueue e consulta dos preços atualizados na aplicação.
+    \item \textbf{Pipeline de scraping}: execução dos scrapers, verificação dos dados no MongoDB, processamento pelo MatchQueue em modo \textit{worker} via GitHub Actions e consulta dos preços atualizados na aplicação.
 \end{itemize}
 
 A validação funcional confirmou que o sistema se comporta de acordo com os requisitos definidos, com tempos de resposta adequados às necessidades de utilização em contexto real de compra.

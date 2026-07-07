@@ -88,10 +88,10 @@ O repositório \texttt{scraper-orchestrator} contém um workflow, ativado diaria
 \begin{enumerate}
     \item Invoca em paralelo os workflows reutilizáveis de cada scraper;
     \item Aguarda a conclusão de todos os scrapers (\texttt{needs: [...]});
-    \item Despoleta, através de um evento \texttt{repository\_dispatch}, o workflow do MatchQueue, que executa o componente worker para normalizar os dados recolhidos.
+    \item Despoleta, através de um evento \texttt{repository\_dispatch}, o workflow do MatchQueue, que corre a aplicação em modo \textit{worker} para normalizar os dados recolhidos.
 \end{enumerate}
 
-Ao concluir com sucesso, o workflow do MatchQueue disponibiliza, por sua vez, um novo evento \texttt{repository\_dispatch} para o repositório \texttt{fcm-notification-worker}, que compila e executa a aplicação diretamente no \textit{runner}, sem deployment persistente, encaminhando as notificações pendentes para o Firebase Cloud Messaging. Esta cadeia de eventos entre repositórios substitui a necessidade de um agendador central: cada etapa disponibiliza a seguinte apenas quando a anterior é concluída com sucesso.
+Ao concluir com sucesso, o workflow do MatchQueue disponibiliza, por sua vez, um novo evento \texttt{repository\_dispatch} para o repositório \texttt{fcm-notification-worker}, que compila e executa a aplicação diretamente no \textit{runner}, sem deployment persistente, encaminhando as notificações pendentes para o Firebase Cloud Messaging. Esta cadeia de eventos entre repositórios substitui a necessidade de um agendador central: o GitHub Actions apenas orquestra a execução, enquanto cada componente mantém o seu papel funcional.
 
 Esta arquitetura de orquestração permite adicionar suporte a uma nova insígnia simplesmente criando um novo repositório de scraper com um workflow reutilizável e referenciando-o no orchestrator, sem modificar nenhum dos scrapers existentes.
 

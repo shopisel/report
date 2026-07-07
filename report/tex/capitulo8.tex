@@ -18,7 +18,7 @@ Os principais componentes desenvolvidos foram:
 
 \begin{itemize}
     \item Cinco serviços de backend em ASP.NET Core (listas, produtos, preços, lojas, contas), cada um com persistência relacional em PostgreSQL;
-    \item Um componente worker (MatchQueue) que faz a ponte entre dados de scraping armazenados em MongoDB e a base de dados relacional normalizada;
+    \item Um serviço ASP.NET Core com modo \textit{worker} (MatchQueue), executado pelo GitHub Actions, que faz a ponte entre dados de scraping armazenados em MongoDB e a base de dados relacional normalizada;
     \item Dois scrapers baseados em Playwright para recolha automática de dados do Continente e do Pingo Doce;
     \item Um orchestrator de scrapers baseado em GitHub Actions reusable workflows;
     \item Um worker de notificações que integra a base de dados com o Firebase Cloud Messaging;

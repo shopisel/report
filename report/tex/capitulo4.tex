@@ -279,7 +279,7 @@ Os endpoints expostos são:
 \section{Pipeline de Recolha de Dados}
 \label{sec:4.3}
 
-A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. Como se pode ver na Figura~\ref{fig:pipeline}, o fluxo é iniciado pelo \textit{Scraper Orchestrator}, segue para os scrapers e termina no \textit{MatchQueue} e na entrega de notificações.
+A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. Neste fluxo, a expressão \textit{worker} refere-se ao modo de execução pontual de componentes que processam uma tarefa e terminam logo após concluí-la, enquanto os serviços backend permanecem expostos como APIs. Como se pode ver na Figura~\ref{fig:pipeline}, o fluxo é iniciado pelo \textit{Scraper Orchestrator}, segue para os scrapers e termina no \textit{MatchQueue} e na entrega de notificações.
 
 \subsection{Scraper Orchestrator}
 \label{sec:4.3.1}
@@ -291,7 +291,7 @@ Esta abordagem permite executar os scrapers em paralelo, aguardar a conclusão d
 \subsection{Scraper Continente}
 \label{sec:4.3.2}
 
-O Scraper Continente é uma aplicação .NET que utiliza o Playwright para navegar automaticamente no website do Continente e extrair informação de produtos por categoria. O Playwright permite controlar um browser real, sendo adequado para páginas com conteúdo renderizado dinamicamente no cliente, como é o caso do website do Continente~\cite{playwright-docs}.
+O Scraper Continente é uma aplicação .NET executada como tarefa pontual através de GitHub Actions que utiliza o Playwright para navegar automaticamente no website do Continente e extrair informação de produtos por categoria. O Playwright permite controlar um browser real, sendo adequado para páginas com conteúdo renderizado dinamicamente no cliente, como é o caso do website do Continente~\cite{playwright-docs}.
 
 O scraper percorre as categorias configuradas, efetua scroll para carregar mais produtos (mecanismo de lazy loading), e extrai para cada produto o nome, preço atual, preço anterior, preço por unidade, disponibilidade, \ac{URL} da página e \ac{URL} da imagem. O resultado é exportado para um conjunto de ficheiros JSON no diretório \texttt{output/}: o ficheiro \texttt{continente\_products.json} contém todos os produtos, sendo ainda gerados ficheiros por grupo de categorias (\texttt{continente\_fresh\_products.json}, \texttt{continente\_dairy\_and\_eggs\_products.json}, \texttt{continente\_beverages\_products.json}), bem como ficheiros individuais por categoria no subdiretório \texttt{categories/}.
 
@@ -328,18 +328,18 @@ O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (
 \subsection{MatchQueue}
 \label{sec:4.3.4}
 
-O MatchQueue é um componente worker que é executado após a conclusão dos scrapers, recebendo os dados de staging do MongoDB, normalizando-os e integrando-os na base de dados relacional.
+O MatchQueue é um serviço ASP.NET Core que expõe uma API própria para desencadear o processamento de correspondência, mas essa via não é utilizada no fluxo operacional do projeto. Na prática, o componente é executado apenas pelo GitHub Actions em modo \textit{worker} após a conclusão dos scrapers; nesse modo, processa o evento \texttt{repository\_dispatch}, executa a normalização e termina a execução.
 Este componente é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
 \begin{itemize}
     \item \textbf{FavoriteProductEntity}: regista os produtos favoritos de cada utilizador, utilizados para determinar quais as notificações de descida de preço a enviar;
     \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
 \end{itemize}
-O MatchQueue é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações como uma etapa temporária da pipeline.
+O MatchQueue é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações como uma etapa temporária da pipeline. Nesta fase, o GitHub Actions funciona como camada de orquestração e não como o tipo de aplicação em si.
 
 \section{FCM Notification Worker}
 \label{sec:4.4}
 
-O FCM Notification Worker é uma aplicação .NET de execução pontual (\textit{run-to-completion}): ao contrário dos serviços de backend, não possui imagem Docker nem deployment persistente, sendo antes compilada e executada diretamente num \textit{runner} do GitHub Actions sempre que recebe o evento \texttt{repository\_dispatch} disponibilizado automaticamente pelo workflow do MatchQueue ao concluir o seu processamento (podendo também ser executada manualmente). O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
+O FCM Notification Worker é uma aplicação .NET de execução pontual (\textit{run-to-completion}): ao contrário dos serviços de backend, não possui imagem Docker nem deployment persistente, sendo compilada e executada diretamente num \textit{runner} do GitHub Actions sempre que recebe o evento \texttt{repository\_dispatch} disponibilizado automaticamente pelo workflow do MatchQueue ao concluir o seu processamento (podendo também ser executada manualmente). O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
 
 \begin{enumerate}
     \item Inicializa o cliente Firebase com as credenciais codificadas em Base64 (provenientes de variável de ambiente);
