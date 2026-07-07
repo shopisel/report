@@ -32,13 +32,15 @@ Para que os testes de integração possam ser executados de forma isolada e repr
 \subsection{Base de dados em memória com SQLite}
 \label{sec:6.2.1}
 
-A classe \texttt{ListServiceApiFactory} (e equivalentes nos outros serviços) substitui o contexto de base de dados da aplicação por uma instância SQLite com ficheiro temporário, criada para cada execução de testes e eliminada no final. Esta abordagem garante que:
+A classe \texttt{ListServiceApiFactory} (e equivalentes nos outros serviços) substitui o contexto de base de dados da aplicação por uma instância SQLite com ficheiro temporário. Esta instância é partilhada por todos os casos de teste de uma mesma classe através de \texttt{IClassFixture}, sendo recriada do zero (\texttt{EnsureDeleted} seguido de \texttt{EnsureCreated}) no arranque de cada classe de testes. Esta abordagem garante que:
 
 \begin{itemize}
-    \item Cada execução de testes parte de um estado limpo e previsível;
+    \item Cada classe de testes parte de um estado limpo e previsível, uma vez que a base de dados é recriada antes da primeira execução;
     \item Não é necessário provisionar uma instância de PostgreSQL para executar os testes localmente ou nas pipelines de \ac{CI/CD};
-    \item Os testes são completamente deterministas e não interferem entre si.
+    \item Os testes são deterministas na sua avaliação individual, embora, por partilharem a mesma instância de base de dados dentro da classe, não sejam totalmente independentes entre si ao nível da persistência: dados criados por um caso de teste permanecem visíveis para os casos seguintes da mesma classe. Esta limitação é mitigada pelo facto de as asserções verificarem a presença ou ausência de entidades específicas (\texttt{Assert.Contains}/\texttt{Assert.DoesNotContain}), em vez de contagens exatas, tornando os testes tolerantes a este estado partilhado.
 \end{itemize}
+
+Refira-se ainda que o ficheiro SQLite temporário criado para cada classe de testes não é explicitamente removido do sistema de ficheiros no final da execução, dado não existir libertação de recursos que invoque \texttt{File.Delete} sobre o ficheiro subjacente. Trata-se de uma limitação conhecida desta abordagem, sem impacto na correção dos testes, mas que pode originar acumulação de ficheiros residuais no diretório temporário do sistema operativo ao longo de sucessivas execuções, e que deveria ser endereçada numa iteração futura.
 
 \subsection{Handler de autenticação de teste}
 \label{sec:6.2.2}
