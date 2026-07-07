@@ -342,7 +342,7 @@ O MatchQueue é orquestrado por um workflow de GitHub Actions que corre após a 
 O FCM Notification Worker é uma aplicação .NET de execução pontual (\textit{run-to-completion}): ao contrário dos serviços de backend, não possui imagem Docker nem deployment persistente, sendo compilada e executada diretamente num \textit{runner} do GitHub Actions sempre que recebe o evento \texttt{repository\_dispatch} disponibilizado automaticamente pelo workflow do MatchQueue ao concluir o seu processamento (podendo também ser executada manualmente). O Firebase Cloud Messaging (\ac{FCM})~\cite{firebase-fcm} é um serviço de entrega de mensagens push mantido pela Google, que permite enviar notificações para dispositivos Android e iOS de forma fiável e escalável. O seu funcionamento segue os seguintes passos:
 
 \begin{enumerate}
-    \item Inicializa o cliente Firebase com as credenciais codificadas em Base64 (provenientes de variável de ambiente);
+    \item Inicializa o cliente Firebase com as credenciais, guardadas como segredo e codificadas em Base64 apenas para permitir a sua injeção como variável de ambiente de texto simples (o Base64 não constitui, por si só, um mecanismo de proteção);
     \item Estabelece ligação à base de dados PostgreSQL do MatchQueue;
     \item Consulta a tabela \texttt{notification\_enque} para obter notificações pendentes não processadas (\texttt{checked = false}), cruzando com a tabela \texttt{account\_push\_tokens} para obter os tokens FCM ativos dos utilizadores;
     \item Constrói e envia as mensagens push em lotes de 500 (limite imposto pelo Firebase);
@@ -392,10 +392,10 @@ O fluxo completo de personalização percorre o pipeline de \ac{CI/CD}: o workfl
 
 A aplicação móvel é desenvolvida em React Native com o framework Expo, permitindo uma única base de código para Android e iOS. O Expo Router organiza a navegação por ficheiros e separa o fluxo principal em cinco separadores: \textit{Home}, \textit{Lists}, \textit{Scan}, \textit{Prices} e \textit{Profile}. Para além destes separadores, existem ainda ecrãs dedicados a \textit{Onboarding}, \textit{Auth} e \textit{Alerts}, que são apresentados no \textit{stack} principal da aplicação.
 
-\subsection{Leitura de QR code}
+\subsection{Leitura de código de barras}
 \label{sec:4.6.1}
 
-O ecrã de leitura de QR code é um dos pontos mais práticos da experiência móvel. A aplicação usa a câmara do dispositivo para capturar o código, extrai o identificador e complementa a informação do produto com o serviço público Open Food Facts quando o catálogo local não é suficiente. De seguida, envia ao endpoint \texttt{/products/qrCode} um corpo \ac{JSON} com o \texttt{barcode} lido e as \texttt{keywords} obtidas a partir dos dados complementares, permitindo ao backend tentar primeiro uma correspondência exata e, se necessário, devolver produtos relacionados~\cite{gs1-ean-upc,openfoodfacts-api}.
+O ecrã de leitura de código de barras é um dos pontos mais práticos da experiência móvel. A aplicação usa a câmara do dispositivo para capturar o código, extrai o identificador e complementa a informação do produto com o serviço público Open Food Facts quando o catálogo local não é suficiente. De seguida, envia ao endpoint \texttt{/products/qrCode} um corpo \ac{JSON} com o \texttt{barcode} lido e as \texttt{keywords} obtidas a partir dos dados complementares, permitindo ao backend tentar primeiro uma correspondência exata e, se necessário, devolver produtos relacionados~\cite{gs1-ean-upc,openfoodfacts-api}.
 
 O fluxo implementado distingue três resultados distintos no ecrã de scan: produto encontrado, apenas produtos relacionados e nenhum resultado. Quando existe um produto exato, a aplicação apresenta a ação de adicionar à lista, abre uma modal para escolher a lista de destino e guarda o produto lido localmente para que possa ser reutilizado no separador \textit{Prices} quando não exista \texttt{productId} na rota. Quando surgem apenas produtos relacionados, estes são apresentados como itens clicáveis, sem botões adicionais desnecessários. Se não for encontrado qualquer resultado, o utilizador recebe uma mensagem de falha e pode tentar novamente ou pesquisar manualmente pelo nome do produto.
 

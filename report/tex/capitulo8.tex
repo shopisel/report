@@ -8,7 +8,7 @@ Este capítulo apresenta uma síntese do trabalho desenvolvido no âmbito do pro
 \section{Síntese do Trabalho Desenvolvido}
 \label{sec:8.1}
 
-O ShopISEL partiu de uma necessidade concreta dos consumidores: organizar compras num contexto de múltiplas insígnias, preços variáveis e informação dispersa. A solução desenvolvida reúne uma aplicação móvel, uma aplicação web e uma infraestrutura backend baseada em microserviços.
+O ShopISEL partiu de uma necessidade concreta dos consumidores: organizar compras num contexto de múltiplas insígnias, preços variáveis e informação dispersa. A solução desenvolvida reúne uma aplicação móvel, uma aplicação web e uma infraestrutura backend orientada a serviços, com base de dados PostgreSQL partilhada.
 
 Em termos funcionais, a plataforma já cobre os fluxos principais do projeto: gestão de listas, consulta de preços, alertas de descida de preço, leitura de códigos de barras e apresentação de preços com base na localização do utilizador quando aplicável. Estes elementos mostram que o sistema não ficou apenas pela ideia inicial, mas evoluiu para um conjunto de funcionalidades utilizáveis em contexto real.
 
@@ -39,7 +39,7 @@ O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em vária
 
 \textbf{Isolamento de autenticação em testes.} A integração com o Keycloak é essencial para a segurança do sistema, mas representa um ponto de dependência externa nos testes. A solução encontrada, com a criação de um \texttt{TestAuthHandler} que simula a autenticação em contexto de teste, permite executar testes de integração completos sem necessidade de uma instância Keycloak externa.
 
-\textbf{Arquitetura multi-repositório.} A gestão de múltiplos repositórios com ciclos de desenvolvimento independentes requer disciplina no versionamento, na comunicação de contratos entre serviços e na coordenação de alterações que afetam múltiplos componentes. A utilização de GitHub Actions e de ficheiros de configuração declarativos (\texttt{render.yaml}) contribuiu para mitigar esta complexidade.
+\textbf{Arquitetura multi-repositório.} A gestão de múltiplos repositórios com ciclos de desenvolvimento independentes requer disciplina no versionamento, na comunicação de contratos entre serviços e na coordenação de alterações que afetam múltiplos componentes. A utilização de GitHub Actions e de ficheiros de configuração declarativos (\texttt{fly.toml}) contribuiu para mitigar esta complexidade.
 
 \textbf{Sincronização multi-cliente.} A possibilidade de editar a mesma lista a partir da aplicação web e da aplicação móvel impôs a adoção de concorrência otimista no List Service e a adaptação das aplicações cliente ao novo contrato de versão. Este desafio transversal exigiu alterações coordenadas entre backend e frontend, bem como testes que validassem não só o comportamento isolado da API, mas também a experiência do utilizador perante conflitos de atualização.
 
