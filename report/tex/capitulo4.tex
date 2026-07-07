@@ -323,20 +323,18 @@ Os dados são persistidos em MongoDB~\cite{mongodb-docs} em duas coleções:
 
 Esta estratégia de identificação estável permite ao MatchQueue detetar alterações de preço entre execuções consecutivas, comparando os valores pelo mesmo identificador de produto.
 
-Após a conclusão da sincronização com o MongoDB, o scraper pode opcionalmente disparar o processamento no MatchQueue através de um pedido \texttt{POST /matchqueue/trigger}, configurado por variável de ambiente.
-
 O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (cron), lendo as credenciais de acesso ao MongoDB a partir de segredos do repositório.
 
 \subsection{MatchQueue}
 \label{sec:4.3.4}
 
-O MatchQueue Service é um componente worker que é executado após a conclusão dos scrapers, recebendo os dados de staging do MongoDB, normalizando-os e integrando-os na base de dados relacional.
-Este serviço é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
+O MatchQueue é um componente worker que é executado após a conclusão dos scrapers, recebendo os dados de staging do MongoDB, normalizando-os e integrando-os na base de dados relacional.
+Este componente é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
 \begin{itemize}
     \item \textbf{FavoriteProductEntity}: regista os produtos favoritos de cada utilizador, utilizados para determinar quais as notificações de descida de preço a enviar;
     \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
 \end{itemize}
-O serviço é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações sem expor um modo API dedicado.
+O MatchQueue é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações como uma etapa temporária da pipeline.
 
 \section{FCM Notification Worker}
 \label{sec:4.4}

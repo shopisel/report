@@ -18,7 +18,7 @@ Os repositórios principais do projeto são:
     \item \texttt{prices-service} — serviço de preços;
     \item \texttt{stores-service} — serviço de lojas e georreferenciação;
     \item \texttt{account-service} — serviço de perfil de utilizador;
-    \item \texttt{matchqueue-service} — serviço de correspondência e normalização de dados;
+    \item \texttt{matchqueue} — componente worker de correspondência e normalização de dados;
     \item \texttt{fcm-notification-worker} — worker de notificações push;
     \item \texttt{scraper-continente} — scraper do website Continente;
     \item \texttt{scraper-pingodoce} — scraper do website Pingo Doce;
@@ -88,7 +88,7 @@ O repositório \texttt{scraper-orchestrator} contém um workflow, ativado diaria
 \begin{enumerate}
     \item Invoca em paralelo os workflows reutilizáveis de cada scraper;
     \item Aguarda a conclusão de todos os scrapers (\texttt{needs: [...]});
-    \item Despoleta, através de um evento \texttt{repository\_dispatch}, o workflow do MatchQueue, que executa a aplicação em modo worker (\texttt{-{}-mode worker}) para normalizar os dados recolhidos.
+    \item Despoleta, através de um evento \texttt{repository\_dispatch}, o workflow do MatchQueue, que executa o componente worker para normalizar os dados recolhidos.
 \end{enumerate}
 
 Ao concluir com sucesso, o workflow do MatchQueue disponibiliza, por sua vez, um novo evento \texttt{repository\_dispatch} para o repositório \texttt{fcm-notification-worker}, que compila e executa a aplicação diretamente no \textit{runner}, sem deployment persistente, encaminhando as notificações pendentes para o Firebase Cloud Messaging. Esta cadeia de eventos entre repositórios substitui a necessidade de um agendador central: cada etapa disponibiliza a seguinte apenas quando a anterior é concluída com sucesso.
