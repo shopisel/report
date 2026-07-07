@@ -251,7 +251,11 @@ Os endpoints expostos são:
 \subsection{Stores Service}
 \label{sec:4.2.4}
 
-O Stores Service gere o catálogo de lojas do sistema. No estado atual, a informação exposta pelo serviço é deliberadamente simples, centrada no identificador e no nome da loja, servindo como base para associar preços e listas a pontos de venda concretos. A funcionalidade de ordenação por proximidade é tratada na aplicação cliente, que combina a lista de lojas recebida da API com a localização do utilizador quando essa informação está disponível.
+O Stores Service gere o catálogo de lojas do sistema. Cada loja tem um identificador, nome, insígnia (\texttt{Brand}), morada, cidade e coordenadas geográficas opcionais (\texttt{Latitude}/\texttt{Longitude}), sendo estas últimas usadas para ordenar lojas por proximidade na aplicação cliente.
+
+Na prática, o catálogo distingue dois tipos de registo. Por um lado, existem duas lojas genéricas por insígnia (\texttt{store-1}, \textit{Continente Online}, e \texttt{store-2}, \textit{Pingo Doce Online}), sem coordenadas, que são as únicas lojas a que os \textit{scrapers} de produtos associam preços: todo o histórico de preços do sistema está, atualmente, ancorado nestas duas lojas genéricas, e não em lojas físicas concretas. Por outro lado, a base de dados de produção contém o catálogo completo de lojas físicas das duas insígnias, com morada e coordenadas reais.
+
+Este catálogo de lojas físicas foi obtido com um scraper dedicado (\texttt{all-stores-scraper}), que recolhe morada e coordenadas de todas as lojas do Continente e do Pingo Doce a partir dos respetivos localizadores de lojas, produzindo um total de 908 lojas físicas (406 do Continente e 502 do Pingo Doce). O resultado da recolha foi aplicado à base de dados através do script \ac{SQL} de \textit{upsert} gerado pelo próprio scraper, executado manualmente. Esta operação não está, no entanto, codificada como uma migração do Entity Framework Core nem integrada em nenhuma pipeline de \ac{CI/CD}: é um passo manual e não versionado, pelo que uma nova instância da base de dados criada apenas a partir das migrações do serviço não reproduz o catálogo completo, ficando limitada ao pequeno conjunto de lojas semeado na migração de sementeira. A lacuna não está, portanto, na recolha de dados de lojas — que já cobre a totalidade das duas insígnias —, mas na reprodutibilidade e automatização desse passo de importação.
 
 Os endpoints expostos são:
 
@@ -404,7 +408,7 @@ Este fluxo pede autorização explícita para aceder à câmara quando o ecrã d
 \subsection{Localização e preços próximos}
 \label{sec:4.6.2}
 
-A componente de preços próximos utiliza o módulo de localização do Expo para obter a posição do utilizador e ordenar os resultados em função da distância quando existem coordenadas disponíveis. O objetivo não é criar um sistema de georreferenciação complexo no servidor, mas sim aproveitar a localização do dispositivo para dar contexto à consulta de preços e destacar as lojas mais próximas no momento da compra.
+A componente de preços próximos utiliza o módulo de localização do Expo para obter a posição do utilizador. Como o preço devolvido pelo Prices Service está associado a uma das duas lojas genéricas por insígnia (Secção~\ref{sec:4.2.4}), a aplicação usa a insígnia dessa loja para procurar, entre as lojas físicas com coordenadas da mesma insígnia, as três mais próximas do utilizador, e apresenta o preço sob o nome e morada dessas lojas. Ou seja, a proximidade determina que loja física é mostrada ao utilizador, mas não afeta o valor do preço apresentado, que é o mesmo em todas as lojas da insígnia. Quando não existem coordenadas disponíveis — do utilizador ou de lojas físicas dessa insígnia — a aplicação apresenta a loja genérica, sem indicação de distância. O objetivo não foi criar um sistema de georreferenciação complexo no servidor, mas sim aproveitar a localização do dispositivo para dar contexto à consulta de preços e destacar lojas próximas no momento da compra.
 
 A obtenção da localização também depende de autorização do utilizador: o \textit{hook} de localização pede permissão em \textit{foreground} antes de obter e acompanhar a posição atual. Quando a permissão é recusada, a aplicação mostra essa limitação de forma explícita e continua a funcionar, apenas sem ordenar os preços por proximidade.
 
