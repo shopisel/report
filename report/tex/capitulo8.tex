@@ -10,7 +10,7 @@ Este capítulo apresenta uma síntese do trabalho desenvolvido no âmbito do pro
 
 O ShopISEL partiu de uma necessidade concreta dos consumidores: organizar compras num contexto de múltiplas insígnias, preços variáveis e informação dispersa. A solução desenvolvida reúne uma aplicação móvel, uma aplicação web e uma infraestrutura backend orientada a serviços, com base de dados PostgreSQL partilhada.
 
-Em termos funcionais, a plataforma já cobre os fluxos principais do projeto: gestão de listas, consulta de preços, alertas de descida de preço, leitura de códigos de barras e apresentação de preços com base na localização do utilizador quando aplicável. Estes elementos mostram que o sistema não ficou apenas pela ideia inicial, mas evoluiu para um conjunto de funcionalidades utilizáveis em contexto real.
+Em termos funcionais, a plataforma já cobre os fluxos principais do projeto: gestão de listas, consulta de preços, alertas de descida de preço, leitura de códigos de barras e apresentação de preços com base na localização do utilizador quando aplicável. Estes elementos mostram que o sistema não ficou apenas pela ideia inicial, mas evoluiu para um conjunto de funcionalidades utilizáveis em cenários concretos de compra.
 
 Do ponto de vista técnico, o maior desafio não foi apenas implementar ecrãs ou endpoints, mas ligar informação proveniente de fontes com estruturas, formatos e níveis de detalhe distintos, com autenticação centralizada, notificação push e sincronização entre serviços sem perder simplicidade de utilização.
 
@@ -48,7 +48,7 @@ O desenvolvimento do ShopISEL apresentou desafios técnicos relevantes em vária
 \section{Considerações Finais}
 \label{sec:8.3}
 
-O projeto ShopISEL demonstra que é possível construir uma plataforma digital funcional e coerente com base em práticas de engenharia de software, mas também evidencia limites concretos do processo seguido. Adoptaram-se decomposição por serviços, contratos explícitos entre componentes, contentorização, \ac{CI/CD}, testes de integração e revisão iterativa das funcionalidades, o que ajudou a manter o sistema evolutivo e verificável.
+O projeto ShopISEL demonstra a viabilidade de uma plataforma digital funcional e coerente, mas também evidencia limites concretos do processo seguido. Contribuíram para essa viabilidade a decomposição por serviços, contratos explícitos entre componentes, contentorização, \ac{CI/CD}, testes de integração e revisão iterativa das funcionalidades, o que ajudou a manter o sistema evolutivo e verificável.
 
 Ainda assim, o desenvolvimento não correspondeu a um processo A-SDLC completo, tal como enquadrado por Bhati~\cite{bhati-asdlc-2026}. Não houve delegação autónoma de tarefas de ponta a ponta a agentes, nem um sistema formal de governação com registo sistemático de decisões, validação de cada passo por agentes especializados e controlo contínuo do contexto. O uso de LLMs foi sobretudo assistivo, apoiando implementação, refinamento e validação pontual.
 

@@ -8,7 +8,7 @@ Este capítulo apresenta em detalhe a arquitetura, as tecnologias e a implementa
 \section{Visão Geral da Arquitetura}
 \label{sec:4.1}
 
-O ShopISEL segue uma arquitetura orientada a serviços, em que cada domínio funcional é tratado por um serviço autónomo com a sua própria lógica de negócio e ciclo de deployment, partilhando uma única base de dados PostgreSQL na qual cada serviço gere a sua própria tabela. Esta separação permite que cada serviço evolua de forma independente, reduz o acoplamento entre componentes e facilita a escalabilidade horizontal de cada parte do sistema.
+O ShopISEL segue uma arquitetura orientada a serviços, em que cada domínio funcional é tratado por um serviço autónomo com a sua própria lógica de negócio e ciclo de deployment, partilhando uma única base de dados PostgreSQL. Na generalidade dos casos, cada serviço gere exclusivamente as suas próprias tabelas; o MatchQueue é uma exceção documentada na Secção~\ref{sec:4.3.4}, por ler e escrever diretamente nas tabelas \texttt{products}, \texttt{categories}, \texttt{prices} e \texttt{favorite\_products}, geridas em primeira instância pelos serviços de domínio correspondentes. Esta separação permite que a maioria dos serviços evolua de forma independente, reduz o acoplamento entre componentes e facilita a escalabilidade horizontal de cada parte do sistema.
 
 A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sistema.
 
@@ -75,7 +75,7 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 \label{fig:arquitetura}
 \end{figure}
 
-Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend partilham uma única base de dados PostgreSQL, na qual cada serviço gere a sua própria tabela, e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
+Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend partilham uma única base de dados PostgreSQL e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
 
 A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
 
@@ -157,6 +157,55 @@ A Figura~\ref{fig:er} apresenta o modelo de dados simplificado do sistema, evide
 \label{fig:er}
 \end{figure}
 
+A Figura~\ref{fig:er} omite, por clareza visual, um conjunto de entidades de suporte relacionadas com contas de utilizador, notificações e o pipeline de recolha de dados. A Tabela~\ref{tab:entidades} completa o modelo, listando todas as entidades persistidas pelos serviços de backend, incluindo as entidades do MatchQueue e os dados brutos armazenados em MongoDB pelos \textit{scrapers}.
+
+\begin{table}[H]
+\centering
+\caption{Entidades de dados por serviço, complementando o modelo simplificado da Figura~\ref{fig:er}.}
+\label{tab:entidades}
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{2.7cm}|p{8.0cm}|}
+\hline
+\textbf{Serviço} & \textbf{Entidade} & \textbf{Campos principais} \\
+\hline
+List Service & ShoppingList & \texttt{Id}, \texttt{OwnerId}, \texttt{Name}, \texttt{CreatedAt}, \texttt{Version} \\
+\hline
+List Service & ShoppingListItem & \texttt{Id}, \texttt{ListId}, \texttt{ProductId}, \texttt{StoreId}, \texttt{Quantity}, \texttt{Checked} \\
+\hline
+Products Service & Product & \texttt{Id}, \texttt{Name}, \texttt{Brand}, \texttt{Barcode}, \texttt{Image}, \texttt{CategoryId} \\
+\hline
+Products Service & Category & \texttt{Id}, \texttt{Name}, \texttt{Image}, \texttt{ParentCategoryId} \\
+\hline
+Prices Service & Price & \texttt{Id}, \texttt{ProductId}, \texttt{StoreId}, \texttt{PriceText}, \texttt{SaleText}, \texttt{QuantityText}, \texttt{UnitPriceText}, \texttt{SaleDate}, \texttt{UpdatedAt} \\
+\hline
+Stores Service & Store & \texttt{Id}, \texttt{Name}, \texttt{Brand}, \texttt{Address}, \texttt{City}, \texttt{Latitude}, \texttt{Longitude} \\
+\hline
+Account Service & Account & \texttt{Id} \\
+\hline
+Account Service & AccountPushToken & \texttt{Id}, \texttt{AccountId}, \texttt{FcmToken}, \texttt{Platform}, \texttt{DeviceId}, \texttt{IsActive}, \texttt{LastSeenAt}, \texttt{CreatedAt}, \texttt{UpdatedAt} \\
+\hline
+Account Service & FavoriteProduct & \texttt{AccountId}, \texttt{ProductId} \\
+\hline
+MatchQueue Service & Product & \texttt{Id}, \texttt{CanonicalKey}, \texttt{Name}, \texttt{Brand}, \texttt{Barcode}, \texttt{CategoryId}, \texttt{Image} \\
+\hline
+MatchQueue Service & Category & \texttt{Id} \\
+\hline
+MatchQueue Service & Price & \texttt{Id}, \texttt{ProductId}, \texttt{StoreId}, \texttt{PriceText}, \texttt{SaleText}, \texttt{QuantityText}, \texttt{UnitPriceText}, \texttt{SaleDate}, \texttt{UpdatedAt} \\
+\hline
+MatchQueue Service & FavoriteProduct & \texttt{AccountId}, \texttt{ProductId} \\
+\hline
+MatchQueue Service & NotificationEnqueue & \texttt{Id}, \texttt{AccountId}, \texttt{ProductId}, \texttt{Checked} \\
+\hline
+MongoDB (\textit{scrapers}) & scrape\_runs & \texttt{\_id}, \texttt{worker\_run\_id}, \texttt{source}, \texttt{status}, \texttt{started\_at}, \texttt{finished\_at}, \texttt{products\_count} \\
+\hline
+MongoDB (\textit{scrapers}) & scrape\_products & \texttt{\_id}, \texttt{run\_id}, \texttt{source}, \texttt{product\_key}, \texttt{external\_name}, \texttt{price\_text}, \texttt{sale\_text}, \texttt{unit\_price\_text}, \texttt{category\_id}, \texttt{store\_id}, \texttt{scraped\_at} \\
+\hline
+\end{tabular}
+\end{table}
+
+As entidades \textit{Product}, \textit{Category}, \textit{Price} e \textit{FavoriteProduct} do MatchQueue não são réplicas: o seu modelo Entity Framework Core aponta explicitamente para as mesmas tabelas físicas geridas pelo Products Service, Prices Service e Account Service (Secção~\ref{sec:4.3.4}). É por isso o único ponto do sistema em que mais do que um serviço lê e escreve diretamente na mesma tabela.
+
 \section{Serviços de Backend}
 \label{sec:4.2}
 
@@ -235,9 +284,9 @@ O mesmo critério de distância e semelhança é reutilizado na funcionalidade \
 \subsection{Prices Service}
 \label{sec:4.2.3}
 
-O Prices Service mantém um registo dos preços de produtos por loja, incluindo suporte a preços de promoção. A entidade \textbf{PriceEntity} contém o identificador do produto, o identificador da loja, o preço atual, um preço de promoção opcional (\texttt{Sale}) e a data da promoção (\texttt{SaleDate}), bem como a data de última atualização.
+O Prices Service mantém o preço mais recente de cada produto por loja. A entidade \textbf{PriceEntity} contém o identificador do produto, o identificador da loja, e os valores tal como extraídos pelos \textit{scrapers} em texto livre: \texttt{PriceText} (preço normal), \texttt{SaleText} (preço promocional opcional), \texttt{QuantityText} e \texttt{UnitPriceText} (quantidade e preço unitário, quando disponíveis na página de origem), a data da promoção (\texttt{SaleDate}) e a data da última atualização. Os preços são guardados como texto porque refletem o formato exato apresentado pela insígnia de origem (por exemplo, ``1,99 €''); a conversão para valor numérico, necessária para comparação, ordenação e cálculo de percentagem de desconto, é feita pelas aplicações cliente.
 
-Este modelo permite ao sistema apresentar ao utilizador não só o preço atual, mas também o histórico de promoções e a variação de preços ao longo do tempo, suportando a funcionalidade de alertas de descida de preço.
+Cada atualização de preço para o mesmo par produto/loja substitui o registo anterior: o MatchQueue, ao processar novos dados de \textit{scraping}, localiza o preço existente para esse produto e loja e atualiza-o \textit{in place}. O sistema não preserva, por isso, os valores anteriores de preço — apenas o preço e a eventual promoção correntes são conhecidos em cada momento. A extensão do modelo para preservar histórico de variações está identificada como trabalho futuro (Capítulo~\ref{chap:7}).
 
 Os endpoints expostos são:
 
@@ -333,10 +382,9 @@ O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (
 \label{sec:4.3.4}
 
 O MatchQueue é um serviço ASP.NET Core que expõe uma API própria para desencadear o processamento de correspondência, mas essa via não é utilizada no fluxo operacional do projeto. Na prática, o componente é executado apenas pelo GitHub Actions em modo \textit{worker} após a conclusão dos scrapers; nesse modo, processa o evento \texttt{repository\_dispatch}, executa a normalização e termina a execução.
-Este componente é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O modelo de dados do MatchQueue inclui réplicas das entidades de produto, categoria e preço, bem como entidades específicas para a gestão de notificações:
+Este componente é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O seu modelo de dados inclui entidades de produto, categoria, preço e favoritos que, através da configuração do Entity Framework Core, apontam explicitamente para as mesmas tabelas (\texttt{products}, \texttt{categories}, \texttt{prices}, \texttt{favorite\_products}) geridas pelo Products Service, Prices Service e Account Service. Não se trata, portanto, de réplicas sincronizadas por um processo de integração, mas de um segundo modelo de dados independente que lê e escreve diretamente nas mesmas tabelas físicas — nomeadamente para persistir o resultado da normalização de produtos e preços. Esta partilha direta de tabelas é um acoplamento mais forte do que o resto da arquitetura orientada a serviços, e depende de disciplina manual para manter os esquemas de ambos os lados compatíveis, já que as migrações de cada serviço evoluem de forma independente. Além destas entidades partilhadas, o MatchQueue tem uma entidade própria, sem equivalente noutro serviço:
 \begin{itemize}
-    \item \textbf{FavoriteProductEntity}: regista os produtos favoritos de cada utilizador, utilizados para determinar quais as notificações de descida de preço a enviar;
-    \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}).
+    \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}), persistida na tabela \texttt{notification\_enque}, usada para determinar quais os utilizadores a notificar quando um produto favorito desce de preço.
 \end{itemize}
 O MatchQueue é orquestrado por um workflow de GitHub Actions que corre após a conclusão dos scrapers, permitindo encadear a recolha, a normalização e o processamento de notificações como uma etapa temporária da pipeline. Nesta fase, o GitHub Actions funciona como camada de orquestração e não como o tipo de aplicação em si.
 
