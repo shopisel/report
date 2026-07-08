@@ -14,7 +14,7 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[scale=0.9, transform shape,
+\begin{tikzpicture}[scale=0.68, transform shape,
     node distance=1.0cm and 1.4cm,
     service/.style={rectangle, draw=black, rounded corners=4pt, fill=white,
                     minimum width=2.35cm, minimum height=0.9cm, font=\small, align=center},
@@ -77,7 +77,7 @@ A Figura~\ref{fig:arquitetura} apresenta uma visão geral da arquitetura do sist
 
 Os pedidos das aplicações cliente chegam ao sistema através de um gateway Nginx, que encaminha cada pedido para o serviço responsável com base no caminho do URL. Os serviços de backend partilham uma única base de dados PostgreSQL e, no caso dos serviços protegidos, validam os tokens \ac{JWT} emitidos pelo Keycloak.
 
-A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de staging. O MatchQueue processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
+A recolha de dados de produtos e preços é feita por scrapers independentes para cada insígnia, que persistem os dados em MongoDB como área de \textit{staging} — um espaço de armazenamento intermédio onde os dados brutos, tal como extraídos de cada website, ficam temporariamente disponíveis antes de serem validados e integrados no modelo de dados definitivo, sem que erros ou inconsistências nesta fase inicial afetem diretamente a base de dados relacional em produção. O MatchQueue processa estes dados, normalizando-os e integrando-os na base de dados relacional. Por fim, o FCM Notification Worker lê as notificações pendentes e envia alertas para os dispositivos dos utilizadores através do Firebase Cloud Messaging. A Figura~\ref{fig:pipeline} apresenta este fluxo de forma separada, para evitar sobreposição com a arquitetura principal.
 
 Por uma questão de foco, a Figura~\ref{fig:pipeline} representa apenas os componentes de execução e o fluxo de dados entre eles. O mecanismo que desencadeia cada etapa — workflows de GitHub Actions que invocam os scrapers e, de seguida, o MatchQueue e o FCM Notification Worker através de eventos \texttt{repository\_dispatch} — não é um componente de runtime e não está representado no diagrama; a orquestração completa é descrita na Secção~\ref{sec:5.4}.
 
@@ -201,7 +201,7 @@ MongoDB (\textit{scrapers}) & scrape\_products & \texttt{\_id}, \texttt{run\_id}
 \section{Serviços de Backend}
 \label{sec:4.2}
 
-Todos os serviços de backend são desenvolvidos em ASP.NET Core com Minimal \ac{API}s, tirando partido da sua leveza, desempenho e boa integração com o ecossistema .NET. Cada serviço dispõe do seu próprio Dockerfile e pipeline de \ac{CI/CD}, sendo publicado como uma imagem Docker no GitHub Container Registry.
+Todos os serviços de backend são desenvolvidos em ASP.NET Core com Minimal \ac{API}s, que reduzem a quantidade de código \textit{boilerplate} — código repetitivo e de estrutura, sem lógica de negócio própria, que seria necessário declarar para cada endpoint (por exemplo, classes de \textit{controller} e respetivos atributos de rota) — face à abordagem tradicional baseada em \textit{controllers}, mantendo a integração completa com o ecossistema .NET. Cada serviço dispõe do seu próprio Dockerfile e pipeline de \ac{CI/CD}, sendo publicado como uma imagem Docker no GitHub Container Registry.
 
 \subsection{List Service}
 \label{sec:4.2.1}

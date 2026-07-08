@@ -12,6 +12,8 @@ O ShopISEL foi desenvolvido com uma arquitetura extensível, que facilita a adi�
 
 \textbf{Histórico de preços e análise de tendências.} Atualmente, o sistema mantém o preço mais recente de cada produto por loja. A extensão do modelo de dados para preservar o histórico completo de variações permitiria apresentar ao utilizador gráficos de evolução de preço e detetar padrões sazonais.
 
+\textbf{Agregação de notificações por utilizador.} Atualmente, cada descida de preço de um produto favorito gera uma notificação push independente: um utilizador com, por exemplo, 100 produtos favoritos que desçam de preço no mesmo ciclo de processamento do MatchQueue recebe 100 notificações separadas, em vez de uma única notificação agregada. Uma extensão natural seria introduzir um mecanismo de \textit{buffer} de notificações por utilizador, agrupando as descidas de preço pendentes de uma mesma conta e consolidando-as numa única notificação-resumo (por exemplo, ``5 produtos favoritos desceram de preço''), reduzindo o ruído para o utilizador sem perder a informação relevante.
+
 \textbf{Recomendações personalizadas.} Com base nos produtos favoritos, no histórico de listas e nas preferências do utilizador, o sistema poderia oferecer sugestões de produtos ou de lojas mais vantajosas, incorporando lógica de recomendação personalizada.
 
 \textbf{Partilha de listas.} A funcionalidade de partilha de listas de compras entre utilizadores (e.g., membros de uma família) é uma extensão natural do modelo atual, que requer a adição de um mecanismo de partilha e controlo de acesso ao nível do List Service.
