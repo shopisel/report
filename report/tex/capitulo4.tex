@@ -324,7 +324,7 @@ Os endpoints expostos são:
 \section{Pipeline de Recolha de Dados}
 \label{sec:4.3}
 
-A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, garantindo que a informação apresentada ao utilizador é atual e fiável. Neste fluxo, a expressão \textit{worker} refere-se ao modo de execução pontual de componentes que processam uma tarefa e terminam logo após concluí-la, enquanto os serviços backend permanecem expostos como APIs. Como se pode ver na Figura~\ref{fig:pipeline}, o fluxo é iniciado pelo \textit{Scraper Orchestrator}, segue para os scrapers e termina no \textit{MatchQueue} e na entrega de notificações.
+A recolha automática de dados de produtos e preços é um dos pilares do ShopISEL, procurando manter a informação apresentada ao utilizador atual e coerente com as fontes recolhidas. Neste fluxo, a expressão \textit{worker} refere-se ao modo de execução pontual de componentes que processam uma tarefa e terminam logo após concluí-la, enquanto os serviços backend permanecem expostos como APIs. Como se pode ver na Figura~\ref{fig:pipeline}, o fluxo é iniciado pelo \textit{Scraper Orchestrator}, segue para os scrapers e termina no \textit{MatchQueue} e na entrega de notificações.
 
 \subsection{Scraper Orchestrator}
 \label{sec:4.3.1}
@@ -546,6 +546,6 @@ O acesso às APIs dos serviços de backend é feito através de um gateway Nginx
 
 Esta arquitetura de gateway simplifica a configuração das aplicações cliente, que comunicam com um único endpoint base, e permite adicionar funcionalidades transversais como rate limiting, logging centralizado ou cache HTTP sem modificar os serviços individuais.
 
-Todo o sistema é containerizado com Docker. Cada serviço dispõe de um Dockerfile que produz uma imagem mínima e otimizada para produção. Os serviços são implantados no Fly.io, tirando partido das garantias de disponibilidade e escalabilidade desta plataforma.
+Todo o sistema é containerizado com Docker. Cada serviço dispõe de um Dockerfile que produz uma imagem mínima e otimizada para produção. Os serviços são implantados no Fly.io, tirando partido dos mecanismos de deployment e operação disponibilizados pela plataforma.
 
 A configuração de deployment está declarada nos ficheiros de infraestrutura e nos pipelines de \ac{CI/CD}, que publicam as imagens no GitHub Container Registry e automatizam o processo de entrega.
