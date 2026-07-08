@@ -486,6 +486,8 @@ Os serviços que requerem autenticação (List Service e Account Service) valida
 
 Esta abordagem evita que cada serviço implemente autenticação própria, centraliza a gestão de utilizadores no Keycloak e permite que novos serviços se integrem facilmente no ecossistema de autenticação existente.
 
+No registo de uma nova conta, o Keycloak exige a confirmação do endereço de email antes de permitir o primeiro login, através da \textit{required action} nativa \textit{Verify Email}: após a criação da conta, é enviado automaticamente um email de confirmação com uma ligação que valida o endereço e desbloqueia o acesso. O envio deste email é feito através do Brevo, configurado como servidor \ac{SMTP} do realm do Keycloak, sem necessidade de código adicional nos serviços do ShopISEL.
+
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
