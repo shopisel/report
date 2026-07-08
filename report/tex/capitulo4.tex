@@ -187,15 +187,7 @@ Account Service & AccountPushToken & \texttt{Id}, \texttt{AccountId}, \texttt{Fc
 \hline
 Account Service & FavoriteProduct & \texttt{AccountId}, \texttt{ProductId} \\
 \hline
-MatchQueue Service & Product & \texttt{Id}, \texttt{CanonicalKey}, \texttt{Name}, \texttt{Brand}, \texttt{Barcode}, \texttt{CategoryId}, \texttt{Image} \\
-\hline
-MatchQueue Service & Category & \texttt{Id} \\
-\hline
-MatchQueue Service & Price & \texttt{Id}, \texttt{ProductId}, \texttt{StoreId}, \texttt{PriceText}, \texttt{SaleText}, \texttt{QuantityText}, \texttt{UnitPriceText}, \texttt{SaleDate}, \texttt{UpdatedAt} \\
-\hline
-MatchQueue Service & FavoriteProduct & \texttt{AccountId}, \texttt{ProductId} \\
-\hline
-MatchQueue Service & NotificationEnqueue & \texttt{Id}, \texttt{AccountId}, \texttt{ProductId}, \texttt{Checked} \\
+MatchQueue & NotificationEnqueue & \texttt{Id}, \texttt{AccountId}, \texttt{ProductId}, \texttt{Checked} \\
 \hline
 MongoDB (\textit{scrapers}) & scrape\_runs & \texttt{\_id}, \texttt{worker\_run\_id}, \texttt{source}, \texttt{status}, \texttt{started\_at}, \texttt{finished\_at}, \texttt{products\_count} \\
 \hline
@@ -204,7 +196,7 @@ MongoDB (\textit{scrapers}) & scrape\_products & \texttt{\_id}, \texttt{run\_id}
 \end{tabular}
 \end{table}
 
-As entidades \textit{Product}, \textit{Category}, \textit{Price} e \textit{FavoriteProduct} do MatchQueue não são réplicas: o seu modelo Entity Framework Core aponta explicitamente para as mesmas tabelas físicas geridas pelo Products Service, Prices Service e Account Service (Secção~\ref{sec:4.3.4}). É por isso o único ponto do sistema em que mais do que um serviço lê e escreve diretamente na mesma tabela.
+\texttt{NotificationEnqueue} é a única entidade da tabela exclusiva do MatchQueue. As restantes tabelas que o MatchQueue utiliza (\texttt{products}, \texttt{categories}, \texttt{prices}, \texttt{favorite\_products}) já constam desta tabela associadas aos serviços que as gerem em primeira instância; o MatchQueue acede diretamente às mesmas tabelas físicas através de um modelo Entity Framework Core independente, como descrito na Secção~\ref{sec:4.3.4}.
 
 \section{Serviços de Backend}
 \label{sec:4.2}
@@ -382,7 +374,7 @@ O scraper inclui um workflow de GitHub Actions que o executa de forma agendada (
 \label{sec:4.3.4}
 
 O MatchQueue é um serviço ASP.NET Core que expõe uma API própria para desencadear o processamento de correspondência, mas essa via não é utilizada no fluxo operacional do projeto. Na prática, o componente é executado apenas pelo GitHub Actions em modo \textit{worker} após a conclusão dos scrapers; nesse modo, processa o evento \texttt{repository\_dispatch}, executa a normalização e termina a execução.
-Este componente é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O seu modelo de dados inclui entidades de produto, categoria, preço e favoritos que, através da configuração do Entity Framework Core, apontam explicitamente para as mesmas tabelas (\texttt{products}, \texttt{categories}, \texttt{prices}, \texttt{favorite\_products}) geridas pelo Products Service, Prices Service e Account Service. Não se trata, portanto, de réplicas sincronizadas por um processo de integração, mas de um segundo modelo de dados independente que lê e escreve diretamente nas mesmas tabelas físicas — nomeadamente para persistir o resultado da normalização de produtos e preços. Esta partilha direta de tabelas é um acoplamento mais forte do que o resto da arquitetura orientada a serviços, e depende de disciplina manual para manter os esquemas de ambos os lados compatíveis, já que as migrações de cada serviço evoluem de forma independente. Além destas entidades partilhadas, o MatchQueue tem uma entidade própria, sem equivalente noutro serviço:
+Este componente é responsável pela ponte entre os dados brutos recolhidos pelos scrapers, persistidos em MongoDB, e os dados normalizados que alimentam as restantes funcionalidades do sistema. O seu modelo de dados inclui entidades de produto, categoria, preço e favoritos que, através da configuração do Entity Framework Core, apontam explicitamente para as mesmas tabelas (\texttt{products}, \texttt{categories}, \texttt{prices}, \texttt{favorite\_products}) geridas pelo Products Service, Prices Service e Account Service. Não se trata, portanto, de réplicas sincronizadas por um processo de integração, mas de um segundo modelo de dados independente que lê e escreve diretamente nas mesmas tabelas físicas — nomeadamente para persistir o resultado da normalização de produtos e preços. Esta partilha direta de tabelas é um acoplamento mais forte do que o resto da arquitetura orientada a serviços, e depende de disciplina manual para manter os esquemas de ambos os lados compatíveis, já que as migrações de cada serviço evoluem de forma independente. A título de exemplo, a coluna \texttt{canonical\_key} da tabela \texttt{products} foi introduzida por uma migração do MatchQueue, mas o modelo do Products Service nunca chegou a mapeá-la; de forma simétrica, o modelo do MatchQueue para a tabela \texttt{categories} mapeia apenas o campo \texttt{Id}, ignorando \texttt{name}, \texttt{image} e \texttt{parent\_category\_id}, geridos apenas pelo Products Service. Cada lado do acoplamento conhece, assim, apenas um subconjunto do esquema físico partilhado. Além destas entidades partilhadas, o MatchQueue tem uma entidade própria, sem equivalente noutro serviço:
 \begin{itemize}
     \item \textbf{NotificationEnqueueEntity}: fila de notificações pendentes, com referência ao utilizador, ao produto e ao estado de processamento (\texttt{Checked}), persistida na tabela \texttt{notification\_enque}, usada para determinar quais os utilizadores a notificar quando um produto favorito desce de preço.
 \end{itemize}

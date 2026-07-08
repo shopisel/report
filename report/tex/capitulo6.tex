@@ -42,6 +42,8 @@ A classe \texttt{ListServiceApiFactory} (e equivalentes nos outros serviços) su
 
 Referimos ainda que o ficheiro SQLite temporário criado para cada classe de testes não é explicitamente removido do sistema de ficheiros no final da execução, dado não existir libertação de recursos que invoque \texttt{File.Delete} sobre o ficheiro subjacente. Trata-se de uma limitação conhecida desta abordagem, sem impacto na correção dos testes, mas que pode originar acumulação de ficheiros residuais no diretório temporário do sistema operativo ao longo de sucessivas execuções, e que deveria ser endereçada numa iteração futura.
 
+Importa ainda notar que o SQLite não reproduz de forma exata o comportamento do PostgreSQL utilizado em produção: existem diferenças de dialeto SQL, de funções e tipos suportados, e de semântica de concorrência entre os dois motores. Os testes de integração validam, por isso, o comportamento funcional dos endpoints e a lógica de negócio da aplicação, mas não garantem por si só que o mesmo comportamento se replica de forma idêntica sobre PostgreSQL em todos os cenários.
+
 \subsection{Handler de autenticação de teste}
 \label{sec:6.2.2}
 
@@ -128,4 +130,4 @@ A validação funcional incluiu os seguintes cenários:
     \item \textbf{Pipeline de scraping}: execução dos scrapers, verificação dos dados no MongoDB, processamento pelo MatchQueue em modo \textit{worker} via GitHub Actions e consulta dos preços atualizados na aplicação.
 \end{itemize}
 
-A validação funcional confirmou que o sistema se comporta de acordo com os requisitos definidos, com tempos de resposta adequados às necessidades de utilização em contexto real de compra.
+A validação funcional indicou conformidade do sistema com os principais fluxos definidos nos requisitos, sem se ter realizado uma medição sistemática de desempenho ou testes de carga; a avaliação de tempos de resposta limitou-se à observação qualitativa durante os cenários manuais descritos acima.
